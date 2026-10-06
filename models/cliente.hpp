@@ -17,7 +17,10 @@ class Cliente {
         ~Cliente();
 
         int getId() const;
+        std::string getNome() const;
+        std::string getEmail() const;
         std::vector<Reserva*> getReservas() const;
+        
         void adicionarReserva(Reserva* reserva);
 };
 

@@ -30,3 +30,11 @@ void Cliente::adicionarReserva(Reserva* reserva) {
 int Cliente::getId() const {
     return id;
 }
+
+std::string Cliente::getNome() const {
+    return nome;
+}
+
+std::string Cliente::getEmail() const {
+    return email;
+}
