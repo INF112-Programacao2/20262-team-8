@@ -16,7 +16,7 @@ class Reserva {
 
         static std::vector<Reserva*> reservasAtivas;
     public:
-        Reserva(Cliente* cli, Quadra* q, const std::string& dt, const std::string& hrInicio, int horas);
+        Reserva(Cliente* cli, Quadra* q, std::string& dt, int hrInicio, int horas);
         ~Reserva();
 
         void validarHorarios();
