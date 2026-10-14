@@ -1,6 +1,7 @@
 #include "models/cliente.hpp"
 #include "models/quadra.hpp"
 #include "models/reserva.hpp"
+#include "models/sistemagestao.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -12,6 +13,7 @@
 int main() {
     std::vector<std::unique_ptr<Cliente>> clientes;
     std::vector<std::unique_ptr<Quadra>> quadras;
+    SistemaGestao sistema;
     bool executando = true;
 
     auto lerTexto = [](const std::string& prompt, std::string& valor) {
@@ -191,33 +193,13 @@ int main() {
                 !lerInteiro("Duracao em horas: ", 1, 24, duracao)) {
                 break;
             }
-            if (inicio + duracao > 24) {
-                std::cout << "A reserva deve terminar ate as 24h.\n";
-                continue;
-            }
-
             Cliente* cliente = clientes[indiceCliente - 1].get();
             Quadra* quadra = quadras[indiceQuadra - 1].get();
-            bool conflito = false;
-            for (const Reserva* reserva : Reserva::listarReservasAtivas()) {
-                if (reserva->getQuadra() == quadra &&
-                    reserva->getDataReserva() == data &&
-                    inicio < reserva->getHorarioInicio() + reserva->getDuracaoHoras() &&
-                    reserva->getHorarioInicio() < inicio + duracao) {
-                    conflito = true;
-                    break;
-                }
-            }
-            if (conflito) {
-                std::cout << "A quadra ja possui uma reserva nesse horario.\n";
-                continue;
-            }
-
             try {
-                new Reserva(cliente, quadra, data, inicio, duracao);
-                const auto reservas = Reserva::listarReservasAtivas();
+                Reserva* reserva = sistema.criarReserva(
+                    *cliente, *quadra, data, inicio, duracao);
                 std::cout << "Reserva criada. Valor total: R$ "
-                          << reservas.back()->getValorTotal() << '\n';
+                          << reserva->getValorTotal() << '\n';
             } catch (const std::exception& erro) {
                 std::cout << "Nao foi possivel criar a reserva: " << erro.what() << '\n';
             }
@@ -250,7 +232,7 @@ int main() {
                 std::cout << '\n';
             }
         } else if (opcao == 5 || opcao == 6) {
-            const auto reservas = Reserva::listarReservasAtivas();
+            const auto reservas = sistema.listarReservasAtivas();
             if (reservas.empty()) {
                 std::cout << "Nao ha reservas ativas.\n";
                 continue;
@@ -273,8 +255,11 @@ int main() {
                                 static_cast<int>(reservas.size()), indiceReserva)) {
                     break;
                 }
-                reservas[indiceReserva - 1]->cancelarReserva();
-                std::cout << "Reserva cancelada.\n";
+                if (sistema.cancelarReserva(*reservas[indiceReserva - 1])) {
+                    std::cout << "Reserva cancelada.\n";
+                } else {
+                    std::cout << "A reserva selecionada nao esta mais ativa.\n";
+                }
             }
         }
     }
