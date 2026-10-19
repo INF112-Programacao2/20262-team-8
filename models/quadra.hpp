@@ -26,7 +26,7 @@ public:
     double getPrecoHora() const;
     bool isAtiva() const;
 
-    // POLIMORFISMO: cada tipo de quadra calcula do seu jeito.
+    // cada tipo de quadra calcula do seu jeito.
     virtual std::string getCategoria() const;
     virtual double calcularValorReserva(int duracao, int horarioInicio) const;
 
