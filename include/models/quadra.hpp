@@ -2,6 +2,9 @@
 #define QUADRA_HPP
 
 #include "../enums/TipoQuadra.hpp"
+#include "estrategias/estrategiaPreco.hpp"
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -14,10 +17,12 @@ protected:
     std::vector<TipoQuadra> tipos;
     double precoHora;
     bool ativa;
+    std::unique_ptr<EstrategiaPreco> estrategiaPreco;
 public:
     Quadra(const std::string& nome, const std::string& localizacao,
-           const std::vector<TipoQuadra>& tipos, double precoHora);
-    virtual ~Quadra() = default;  // obrigatorio quando ha heranca
+           const std::vector<TipoQuadra>& tipos, double precoHora,
+           std::unique_ptr<EstrategiaPreco> estrategiaPreco = nullptr);
+    virtual ~Quadra();
 
     int getId() const;
     std::string getNome() const;
@@ -25,6 +30,7 @@ public:
     std::vector<TipoQuadra> getTipos() const;
     double getPrecoHora() const;
     bool isAtiva() const;
+    std::string getNomeEstrategiaPreco() const;
 
     // cada tipo de quadra calcula do seu jeito.
     virtual std::string getCategoria() const;

@@ -1,4 +1,7 @@
 #include "models/quadra.hpp"
+#include "estrategias/estrategiaPadrao.hpp"
+
+#include <utility>
 
 static int gerarId() {
     static int id = 0;
@@ -6,17 +9,23 @@ static int gerarId() {
 }
 
 Quadra::Quadra(const std::string& nome, const std::string& local,
-               const std::vector<TipoQuadra>& tipos, double preco)
+               const std::vector<TipoQuadra>& tipos, double preco,
+               std::unique_ptr<EstrategiaPreco> estrategiaPreco)
     : id(gerarId()), nome(nome), localizacao(local), tipos(tipos),
-      precoHora(preco), ativa(true) {}
+      precoHora(preco), ativa(true), estrategiaPreco(std::move(estrategiaPreco)) {
+    if (!this->estrategiaPreco) {
+        this->estrategiaPreco = std::make_unique<EstrategiaPadrao>();
+    }
+}
+
+Quadra::~Quadra() = default;
 
 std::string Quadra::getCategoria() const {
     return "Simples";
 }
 
 double Quadra::calcularValorReserva(int duracao, int horarioInicio) const {
-    (void)horarioInicio;
-    return precoHora * duracao;
+    return estrategiaPreco->calcularPreco(precoHora, duracao, horarioInicio);
 }
 
 double Quadra::calcularValorReserva(int duracao) const {
@@ -82,4 +91,8 @@ double Quadra::getPrecoHora() const {
 
 bool Quadra::isAtiva() const {
     return ativa;
+}
+
+std::string Quadra::getNomeEstrategiaPreco() const {
+    return estrategiaPreco->getNome();
 }

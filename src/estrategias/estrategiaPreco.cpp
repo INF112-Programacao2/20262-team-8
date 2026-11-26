@@ -3,12 +3,16 @@
 #include "estrategias/estrategiaPadrao.hpp"
 #include "estrategias/estrategiaPico.hpp"
 
-EstrategiaPreco* criarEstrategia(TipoEstrategia tipo) {
-    if (tipo == TipoEstrategia::Mensalista) {
-        return new EstrategiaMensalista();
+#include <stdexcept>
+
+std::unique_ptr<EstrategiaPreco> criarEstrategia(TipoEstrategia tipo) {
+    switch (tipo) {
+        case TipoEstrategia::Padrao:
+            return std::make_unique<EstrategiaPadrao>();
+        case TipoEstrategia::Mensalista:
+            return std::make_unique<EstrategiaMensalista>();
+        case TipoEstrategia::Pico:
+            return std::make_unique<EstrategiaPico>();
     }
-    if (tipo == TipoEstrategia::Pico) {
-        return new EstrategiaPico();
-    }
-    return new EstrategiaPadrao();
+    throw std::invalid_argument("Tipo de estrategia de preco invalido.");
 }

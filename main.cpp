@@ -2,6 +2,7 @@
 #include "models/quadra.hpp"
 #include "models/reserva.hpp"
 #include "models/sistemagestao.hpp"
+#include "estrategias/estrategiaPreco.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -154,7 +155,21 @@ int main() {
                 continue;
             }
 
-            quadras.push_back(std::make_unique<Quadra>(nome, localizacao, modalidades, preco));
+            const TipoEstrategia estrategiasDisponiveis[] = {
+                TipoEstrategia::Padrao, TipoEstrategia::Mensalista, TipoEstrategia::Pico
+            };
+            std::cout << "Estrategias de preco:\n"
+                      << "1 - Padrao (preco por hora)\n"
+                      << "2 - Mensalista (15% de desconto)\n"
+                      << "3 - Horario de pico (+20% entre 18h e 22h)\n";
+            int estrategia;
+            if (!lerInteiro("Escolha a estrategia de preco: ", 1, 3, estrategia)) {
+                break;
+            }
+
+            quadras.push_back(std::make_unique<Quadra>(
+                nome, localizacao, modalidades, preco,
+                criarEstrategia(estrategiasDisponiveis[estrategia - 1])));
             std::cout << "Quadra cadastrada. ID: " << quadras.back()->getId() << '\n';
         } else if (opcao == 3) {
             if (clientes.empty() || quadras.empty()) {
@@ -221,6 +236,7 @@ int main() {
                 std::cout << quadra->getId() << " - " << quadra->getNome()
                           << " | Local: " << quadra->getLocalizacao()
                           << " | Preco/hora: R$ " << quadra->getPrecoHora()
+                          << " | Estrategia: " << quadra->getNomeEstrategiaPreco()
                           << " | Modalidades: ";
                 const auto modalidades = quadra->getTipos();
                 for (std::size_t i = 0; i < modalidades.size(); ++i) {
