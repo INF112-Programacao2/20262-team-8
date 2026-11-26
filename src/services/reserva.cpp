@@ -1,26 +1,20 @@
 #include "models/reserva.hpp"
-#include "models/cliente.hpp"
-#include "models/quadra.hpp"
-#include <string>
-#include <algorithm>
+
 #include <stdexcept>
 
-std::vector<Reserva*> Reserva::reservasAtivas;
-
 Reserva::Reserva(Cliente* cli, Quadra* q, const std::string& dt, int hrInicio, int horas)
-    : cliente(cli), quadra(q), dataReserva(dt), horarioInicio(hrInicio), duracao(horas) {
+    : cliente(cli), quadra(q), dataReserva(dt), horarioInicio(hrInicio), duracao(horas),
+      ativa(true) {
     validarHorarios();
     solicitarCalculoValor();
-    reservasAtivas.push_back(this);
     if (cliente != nullptr) {
         cliente->adicionarReserva(this);
     }
 }
 
 Reserva::~Reserva() {
-    auto it = std::find(reservasAtivas.begin(), reservasAtivas.end(), this);
-    if (it != reservasAtivas.end()) {
-        reservasAtivas.erase(it);
+    if (cliente != nullptr) {
+        cliente->removerReserva(this);
     }
 }
 
@@ -47,10 +41,7 @@ void Reserva::solicitarCalculoValor() {
 }
 
 void Reserva::cancelarReserva() {
-    auto it = std::find(reservasAtivas.begin(), reservasAtivas.end(), this);
-    if (it != reservasAtivas.end()) {
-        reservasAtivas.erase(it);
-    }
+    ativa = false;
 }
 
 bool Reserva::temConflitoComOutraReserva(const Reserva& outra) const {
@@ -80,10 +71,6 @@ Quadra* Reserva::getQuadra() const {
     return quadra;
 }
 
-std::vector<Reserva*> Reserva::listarReservasAtivas() {
-    return reservasAtivas;
-}
-
 std::string Reserva::getDataReserva() const {
     return dataReserva;
 }
@@ -92,6 +79,6 @@ int Reserva::getHorarioInicio() const {
     return horarioInicio;
 }
 
-void Reserva::adicionarReservaAtiva(Reserva* reserva) {
-    reservasAtivas.push_back(reserva);
+bool Reserva::estaAtiva() const {
+    return ativa;
 }

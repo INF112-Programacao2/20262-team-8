@@ -40,6 +40,7 @@ void testaReservasEAvaliaDisponibilidade() {
     assert(sistema.listarReservasAtivas().size() == 1);
     assert(sistema.verificarDisponibilidade(quadra, "2027-02-28", 17, 2));
     assert(!sistema.cancelarReserva(*reserva));
+    assert(cliente.getReservas().size() == 2);
 
     deveRejeitarReservaInvalida(sistema, cliente, quadra, "2027-02-29", 17, 1);
     deveRejeitarReservaInvalida(sistema, cliente, quadra, "2027-02-28", 23, 2);
@@ -78,10 +79,41 @@ void testaCadastroDeQuadrasPelaFachada() {
     assert(reserva->getValorTotal() == 240.0);
 }
 
+void testaReservasPertencemAoServico() {
+    const std::vector<TipoQuadra> tipos{FUTEBOL};
+    Cliente cliente("Ana", "ana@example.com");
+    Quadra quadra("Principal", "Centro", tipos, 100.0);
+
+    {
+        SistemaGestao primeiroSistema;
+        Reserva* reservaPrimeiro = primeiroSistema.criarReserva(
+            cliente, quadra, "2027-02-28", 17, 2);
+
+        {
+            SistemaGestao segundoSistema;
+            Reserva* reservaSegundo = segundoSistema.criarReserva(
+                cliente, quadra, "2027-02-28", 17, 2);
+
+            assert(primeiroSistema.listarReservasAtivas().size() == 1);
+            assert(segundoSistema.listarReservasAtivas().size() == 1);
+            assert(!primeiroSistema.cancelarReserva(*reservaSegundo));
+            assert(segundoSistema.cancelarReserva(*reservaSegundo));
+            assert(segundoSistema.listarReservasAtivas().empty());
+            assert(primeiroSistema.listarReservasAtivas().size() == 1);
+        }
+
+        assert(cliente.getReservas().size() == 1);
+        assert(primeiroSistema.listarReservasAtivas().front() == reservaPrimeiro);
+    }
+
+    assert(cliente.getReservas().empty());
+}
+
 } // namespace
 
 int main() {
     testaReservasEAvaliaDisponibilidade();
     testaCadastroDeClientesPelaFachada();
     testaCadastroDeQuadrasPelaFachada();
+    testaReservasPertencemAoServico();
 }

@@ -1,5 +1,6 @@
 #include "models/cliente.hpp"
-#include "models/reserva.hpp"
+
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -11,12 +12,6 @@ static int gerarId() {
 Cliente::Cliente(const std::string& nome, const std::string& email)
     : id(gerarId()), nome(nome), email(email) {}
 
-Cliente::~Cliente() {
-    for (Reserva* reserva : reservas) {
-        delete reserva;
-    }
-}
-
 std::vector<Reserva*> Cliente::getReservas() const {
     return reservas;
 }
@@ -25,6 +20,10 @@ void Cliente::adicionarReserva(Reserva* reserva) {
     if (reserva != nullptr) {
         reservas.push_back(reserva);
     }
+}
+
+void Cliente::removerReserva(const Reserva* reserva) {
+    reservas.erase(std::remove(reservas.begin(), reservas.end(), reserva), reservas.end());
 }
 
 int Cliente::getId() const {

@@ -2,7 +2,6 @@
 #define RESERVA_HPP
 
 #include <string>
-#include <vector>
 #include "cliente.hpp"
 #include "quadra.hpp"
 
@@ -14,11 +13,12 @@ class Reserva {
         int horarioInicio;
         double valorTotal;
         int duracao;
-
-        static std::vector<Reserva*> reservasAtivas;
+        bool ativa;
     public:
         Reserva(Cliente* cli, Quadra* q, const std::string& dt, int hrInicio, int horas);
         ~Reserva();
+        Reserva(const Reserva&) = delete;
+        Reserva& operator=(const Reserva&) = delete;
 
         Cliente* getCliente() const;
         Quadra* getQuadra() const;
@@ -26,14 +26,12 @@ class Reserva {
         int getHorarioInicio() const;
         double getValorTotal() const;
         int getDuracaoHoras() const;
+        bool estaAtiva() const;
 
         void validarHorarios();
         void solicitarCalculoValor();
         void cancelarReserva();
         bool temConflitoComOutraReserva(const Reserva& outra) const;
-
-        static std::vector<Reserva*> listarReservasAtivas();
-        static void adicionarReservaAtiva(Reserva* reserva);
 };
 
 #endif

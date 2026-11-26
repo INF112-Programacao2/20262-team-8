@@ -5,7 +5,8 @@ com cálculo de tarifas conforme a modalidade e adicionais de infraestrutura, al
 de operação por CLI e modo headless.
 
 O `SistemaGestao` funciona como fachada: a CLI delega a gestão de clientes, quadras
-e reservas aos serviços do domínio.
+e reservas aos serviços do domínio. Cada serviço é dono dos objetos que cria;
+o cliente mantém apenas referências às reservas associadas.
 
 ## Compilar e testar
 

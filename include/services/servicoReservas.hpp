@@ -5,6 +5,7 @@
 #include "models/quadra.hpp"
 #include "models/reserva.hpp"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,8 @@ private:
                              int duracaoHoras) const;
     static bool ehAnoBissexto(int ano);
     static bool dataValida(const std::string& data);
+
+    std::vector<std::unique_ptr<Reserva>> reservas;
 };
 
 #endif

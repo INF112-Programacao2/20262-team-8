@@ -1,6 +1,7 @@
 #include "services/servicoReservas.hpp"
 
 #include <stdexcept>
+#include <utility>
 
 bool ServicoReservas::ehAnoBissexto(int ano) {
     return ano % 400 == 0 || (ano % 4 == 0 && ano % 100 != 0);
@@ -40,13 +41,17 @@ Reserva* ServicoReservas::criarReserva(Cliente& cliente, Quadra& quadra,
         throw std::runtime_error("A quadra ja possui uma reserva nesse horario.");
     }
 
-    return new Reserva(&cliente, &quadra, data, horarioInicio, duracaoHoras);
+    reservas.reserve(reservas.size() + 1);
+    auto reserva = std::make_unique<Reserva>(&cliente, &quadra, data, horarioInicio,
+                                             duracaoHoras);
+    Reserva* reservaCriada = reserva.get();
+    reservas.push_back(std::move(reserva));
+    return reservaCriada;
 }
 
 bool ServicoReservas::cancelarReserva(Reserva& reserva) {
-    const std::vector<Reserva*> reservas = Reserva::listarReservasAtivas();
-    for (Reserva* reservaAtiva : reservas) {
-        if (reservaAtiva == &reserva) {
+    for (const auto& reservaGerenciada : reservas) {
+        if (reservaGerenciada.get() == &reserva && reservaGerenciada->estaAtiva()) {
             reserva.cancelarReserva();
             return true;
         }
@@ -55,7 +60,13 @@ bool ServicoReservas::cancelarReserva(Reserva& reserva) {
 }
 
 std::vector<Reserva*> ServicoReservas::listarReservasAtivas() const {
-    return Reserva::listarReservasAtivas();
+    std::vector<Reserva*> reservasAtivas;
+    for (const auto& reserva : reservas) {
+        if (reserva->estaAtiva()) {
+            reservasAtivas.push_back(reserva.get());
+        }
+    }
+    return reservasAtivas;
 }
 
 bool ServicoReservas::verificarDisponibilidade(const Quadra& quadra,
@@ -65,8 +76,9 @@ bool ServicoReservas::verificarDisponibilidade(const Quadra& quadra,
     validarDadosReserva(data, horarioInicio, duracaoHoras);
 
     const int fimNovoHorario = horarioInicio + duracaoHoras;
-    for (const Reserva* reserva : Reserva::listarReservasAtivas()) {
-        if (reserva->getQuadra() == &quadra &&
+    for (const auto& reserva : reservas) {
+        if (reserva->estaAtiva() &&
+            reserva->getQuadra() == &quadra &&
             reserva->getDataReserva() == data &&
             horarioInicio < reserva->getHorarioInicio() + reserva->getDuracaoHoras() &&
             reserva->getHorarioInicio() < fimNovoHorario) {
