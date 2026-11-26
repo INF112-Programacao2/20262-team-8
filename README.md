@@ -4,6 +4,9 @@ Sistema para gerenciamento de clientes, quadras e reservas de espaços esportivo
 com cálculo de tarifas conforme a modalidade e adicionais de infraestrutura, além
 de operação por CLI e modo headless.
 
+O `SistemaGestao` funciona como fachada: a CLI delega a gestão de clientes, quadras
+e reservas aos serviços do domínio.
+
 ## Compilar e testar
 
 Com `g++` e `make` instalados:

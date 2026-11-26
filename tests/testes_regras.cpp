@@ -57,9 +57,31 @@ void testaCadastroDeClientesPelaFachada() {
     assert(sistema.getCliente(1) == nullptr);
 }
 
+void testaCadastroDeQuadrasPelaFachada() {
+    SistemaGestao sistema;
+    const std::vector<TipoQuadra> tipos{FUTEBOL};
+    const int clienteId = sistema.cadastrarCliente("Ana", "ana@example.com");
+    const int id = sistema.cadastrarQuadra(
+        "Principal", "Centro", tipos, 100.0, TipoEstrategia::Pico);
+
+    assert(sistema.getQtdQuadras() == 1);
+    assert(sistema.getCliente(0)->getId() == clienteId);
+    assert(sistema.getQuadra(0) != nullptr);
+    assert(sistema.getQuadra(0)->getId() == id);
+    assert(sistema.getQuadra(0)->getNomeEstrategiaPreco() == "Horário de pico");
+    assert(sistema.getQuadra(0)->calcularValorReserva(2, 18) == 240.0);
+    assert(sistema.getQuadra(-1) == nullptr);
+    assert(sistema.getQuadra(1) == nullptr);
+
+    Reserva* reserva = sistema.criarReserva(
+        *sistema.getCliente(0), *sistema.getQuadra(0), "2027-02-28", 18, 2);
+    assert(reserva->getValorTotal() == 240.0);
+}
+
 } // namespace
 
 int main() {
     testaReservasEAvaliaDisponibilidade();
     testaCadastroDeClientesPelaFachada();
+    testaCadastroDeQuadrasPelaFachada();
 }

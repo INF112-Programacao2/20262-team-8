@@ -2,17 +2,15 @@
 #include "models/quadra.hpp"
 #include "models/reserva.hpp"
 #include "models/sistemagestao.hpp"
-#include "estrategias/estrategiaPreco.hpp"
+#include "enums/TipoEstrategia.hpp"
 
 #include <cmath>
 #include <iostream>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
 int main() {
-    std::vector<std::unique_ptr<Quadra>> quadras;
     SistemaGestao sistema;
     bool executando = true;
 
@@ -166,12 +164,12 @@ int main() {
                 break;
             }
 
-            quadras.push_back(std::make_unique<Quadra>(
+            const int quadraId = sistema.cadastrarQuadra(
                 nome, localizacao, modalidades, preco,
-                criarEstrategia(estrategiasDisponiveis[estrategia - 1])));
-            std::cout << "Quadra cadastrada. ID: " << quadras.back()->getId() << '\n';
+                estrategiasDisponiveis[estrategia - 1]);
+            std::cout << "Quadra cadastrada. ID: " << quadraId << '\n';
         } else if (opcao == 3) {
-            if (sistema.getQtdClientes() == 0 || quadras.empty()) {
+            if (sistema.getQtdClientes() == 0 || sistema.getQtdQuadras() == 0) {
                 std::cout << "Cadastre ao menos um cliente e uma quadra antes de reservar.\n";
                 continue;
             }
@@ -188,14 +186,14 @@ int main() {
             }
 
             std::cout << "\nQuadras:\n";
-            for (std::size_t i = 0; i < quadras.size(); ++i) {
-                std::cout << i + 1 << " - " << quadras[i]->getNome()
-                          << " | " << quadras[i]->getLocalizacao()
-                          << " | R$ " << quadras[i]->getPrecoHora() << "/hora\n";
+            for (int i = 0; i < sistema.getQtdQuadras(); ++i) {
+                const Quadra* quadra = sistema.getQuadra(i);
+                std::cout << i + 1 << " - " << quadra->getNome()
+                          << " | " << quadra->getLocalizacao()
+                          << " | R$ " << quadra->getPrecoHora() << "/hora\n";
             }
             int indiceQuadra;
-            if (!lerInteiro("Numero da quadra: ", 1,
-                            static_cast<int>(quadras.size()), indiceQuadra)) {
+            if (!lerInteiro("Numero da quadra: ", 1, sistema.getQtdQuadras(), indiceQuadra)) {
                 break;
             }
 
@@ -208,7 +206,7 @@ int main() {
                 break;
             }
             Cliente* cliente = sistema.getCliente(indiceCliente - 1);
-            Quadra* quadra = quadras[indiceQuadra - 1].get();
+            Quadra* quadra = sistema.getQuadra(indiceQuadra - 1);
             try {
                 Reserva* reserva = sistema.criarReserva(
                     *cliente, *quadra, data, inicio, duracao);
@@ -229,10 +227,11 @@ int main() {
             }
 
             std::cout << "\nQuadras cadastradas:\n";
-            if (quadras.empty()) {
+            if (sistema.getQtdQuadras() == 0) {
                 std::cout << "Nenhuma quadra cadastrada.\n";
             }
-            for (const auto& quadra : quadras) {
+            for (int i = 0; i < sistema.getQtdQuadras(); ++i) {
+                const Quadra* quadra = sistema.getQuadra(i);
                 std::cout << quadra->getId() << " - " << quadra->getNome()
                           << " | Local: " << quadra->getLocalizacao()
                           << " | Preco/hora: R$ " << quadra->getPrecoHora()

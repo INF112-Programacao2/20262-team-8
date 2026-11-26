@@ -12,6 +12,20 @@ Cliente* SistemaGestao::getCliente(int indice) const {
     return servicoClientes.obter(indice);
 }
 
+int SistemaGestao::cadastrarQuadra(const std::string& nome, const std::string& localizacao,
+                                   const std::vector<TipoQuadra>& tipos, double precoHora,
+                                   TipoEstrategia estrategia) {
+    return servicoQuadras.cadastrar(nome, localizacao, tipos, precoHora, estrategia);
+}
+
+int SistemaGestao::getQtdQuadras() const {
+    return servicoQuadras.quantidade();
+}
+
+Quadra* SistemaGestao::getQuadra(int indice) const {
+    return servicoQuadras.obter(indice);
+}
+
 Reserva* SistemaGestao::criarReserva(Cliente& cliente, Quadra& quadra, const std::string& data, int horarioInicio, int duracaoHoras) {
     return servicoReservas.criarReserva(cliente, quadra, data, horarioInicio, duracaoHoras);
 }
