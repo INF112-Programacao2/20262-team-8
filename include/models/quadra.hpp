@@ -2,7 +2,6 @@
 #define QUADRA_HPP
 
 #include "../enums/TipoQuadra.hpp"
-#include "strategies/estrategiaPreço.hpp"
 #include <string>
 #include <vector>
 

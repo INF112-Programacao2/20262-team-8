@@ -1,4 +1,4 @@
-#include "../models/sistemagestao.hpp"
+#include "models/sistemagestao.hpp"
 
 #include <stdexcept>
 

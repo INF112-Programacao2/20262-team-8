@@ -1,6 +1,6 @@
-#include "../models/reserva.hpp"
-#include "../models/cliente.hpp"
-#include "../models/quadra.hpp"
+#include "models/reserva.hpp"
+#include "models/cliente.hpp"
+#include "models/quadra.hpp"
 #include <string>
 #include <algorithm>
 #include <stdexcept>
@@ -40,7 +40,7 @@ void Reserva::validarHorarios() {
 
 void Reserva::solicitarCalculoValor() {
     if (quadra != nullptr) {
-        valorTotal = quadra->calcularValorReserva(duracao);
+        valorTotal = quadra->calcularValorReserva(duracao, horarioInicio);
     } else {
         valorTotal = 0.0;
     }
