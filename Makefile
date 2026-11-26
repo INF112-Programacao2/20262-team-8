@@ -5,7 +5,7 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra
 BUILD_DIR := build
 DOMAIN_SOURCES := $(wildcard src/estrategias/*.cpp src/politicas/*.cpp src/services/*.cpp)
 APP_SOURCES := main.cpp $(DOMAIN_SOURCES)
-HEADERS := $(wildcard include/enums/*.hpp include/estrategias/*.hpp include/models/*.hpp include/politicas/*.hpp)
+HEADERS := $(wildcard include/enums/*.hpp include/estrategias/*.hpp include/models/*.hpp include/politicas/*.hpp include/services/*.hpp)
 
 .PHONY: all test clean
 

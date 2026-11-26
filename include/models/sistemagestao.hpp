@@ -4,6 +4,7 @@
 #include "../models/cliente.hpp"
 #include "../models/quadra.hpp"
 #include "../models/reserva.hpp"
+#include "services/servicoReservas.hpp"
 
 #include <string>
 #include <vector>
@@ -15,9 +16,7 @@ public:
     std::vector<Reserva*> listarReservasAtivas() const;
     bool verificarDisponibilidade(const Quadra& quadra, const std::string& data, int horarioInicio, int duracaoHoras) const;
 private:
-    void validarDadosReserva(const std::string& data, int horarioInicio, int duracaoHoras) const;
-    static bool ehAnoBissexto(int ano);
-    static bool dataValida(const std::string& data);
+    ServicoReservas servicoReservas;
 };
 
 #endif
