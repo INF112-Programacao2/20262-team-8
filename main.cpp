@@ -12,7 +12,6 @@
 #include <vector>
 
 int main() {
-    std::vector<std::unique_ptr<Cliente>> clientes;
     std::vector<std::unique_ptr<Quadra>> quadras;
     SistemaGestao sistema;
     bool executando = true;
@@ -86,8 +85,8 @@ int main() {
                 !lerTexto("Email do cliente: ", email)) {
                 break;
             }
-            clientes.push_back(std::make_unique<Cliente>(nome, email));
-            std::cout << "Cliente cadastrado. ID: " << clientes.back()->getId() << '\n';
+            const int clienteId = sistema.cadastrarCliente(nome, email);
+            std::cout << "Cliente cadastrado. ID: " << clienteId << '\n';
         } else if (opcao == 2) {
             std::string nome;
             std::string localizacao;
@@ -172,19 +171,19 @@ int main() {
                 criarEstrategia(estrategiasDisponiveis[estrategia - 1])));
             std::cout << "Quadra cadastrada. ID: " << quadras.back()->getId() << '\n';
         } else if (opcao == 3) {
-            if (clientes.empty() || quadras.empty()) {
+            if (sistema.getQtdClientes() == 0 || quadras.empty()) {
                 std::cout << "Cadastre ao menos um cliente e uma quadra antes de reservar.\n";
                 continue;
             }
 
             std::cout << "\nClientes:\n";
-            for (std::size_t i = 0; i < clientes.size(); ++i) {
-                std::cout << i + 1 << " - " << clientes[i]->getNome()
-                          << " (" << clientes[i]->getEmail() << ")\n";
+            for (int i = 0; i < sistema.getQtdClientes(); ++i) {
+                const Cliente* cliente = sistema.getCliente(i);
+                std::cout << i + 1 << " - " << cliente->getNome()
+                          << " (" << cliente->getEmail() << ")\n";
             }
             int indiceCliente;
-            if (!lerInteiro("Numero do cliente: ", 1,
-                            static_cast<int>(clientes.size()), indiceCliente)) {
+            if (!lerInteiro("Numero do cliente: ", 1, sistema.getQtdClientes(), indiceCliente)) {
                 break;
             }
 
@@ -208,7 +207,7 @@ int main() {
                 !lerInteiro("Duracao em horas: ", 1, 24, duracao)) {
                 break;
             }
-            Cliente* cliente = clientes[indiceCliente - 1].get();
+            Cliente* cliente = sistema.getCliente(indiceCliente - 1);
             Quadra* quadra = quadras[indiceQuadra - 1].get();
             try {
                 Reserva* reserva = sistema.criarReserva(
@@ -220,10 +219,11 @@ int main() {
             }
         } else if (opcao == 4) {
             std::cout << "\nClientes cadastrados:\n";
-            if (clientes.empty()) {
+            if (sistema.getQtdClientes() == 0) {
                 std::cout << "Nenhum cliente cadastrado.\n";
             }
-            for (const auto& cliente : clientes) {
+            for (int i = 0; i < sistema.getQtdClientes(); ++i) {
+                const Cliente* cliente = sistema.getCliente(i);
                 std::cout << cliente->getId() << " - " << cliente->getNome()
                           << " (" << cliente->getEmail() << ")\n";
             }

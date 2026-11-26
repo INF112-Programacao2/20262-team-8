@@ -46,8 +46,20 @@ void testaReservasEAvaliaDisponibilidade() {
     deveRejeitarReservaInvalida(sistema, cliente, quadra, "2027-02-28", 17, 0);
 }
 
+void testaCadastroDeClientesPelaFachada() {
+    SistemaGestao sistema;
+    const int id = sistema.cadastrarCliente("Ana", "ana@example.com");
+
+    assert(sistema.getQtdClientes() == 1);
+    assert(sistema.getCliente(0) != nullptr);
+    assert(sistema.getCliente(0)->getId() == id);
+    assert(sistema.getCliente(-1) == nullptr);
+    assert(sistema.getCliente(1) == nullptr);
+}
+
 } // namespace
 
 int main() {
     testaReservasEAvaliaDisponibilidade();
+    testaCadastroDeClientesPelaFachada();
 }
