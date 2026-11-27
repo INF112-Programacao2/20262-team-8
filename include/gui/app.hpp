@@ -2,7 +2,7 @@
 #define GUI_APP_HPP
 
 #include "gui/widgets.hpp"
-#include "models/sistemagestao.hpp"
+#include "sistema/sistemagestao.hpp" 
 
 #include <array>
 #include <string>
