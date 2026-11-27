@@ -37,13 +37,31 @@ que coincidirem com o período são canceladas com reembolso integral e cupom de
 10% para o cliente. Novas reservas ficam bloqueadas nas datas da manutenção até
 que ela seja encerrada; a CLI permite registrar e encerrar manutenções.
 
-## Compilar e testar
+## Executar a interface gráfica
 
-Com `g++` e `make` instalados:
+A aplicação principal usa SFML 3. Instale a biblioteca e compile com:
 
 ```sh
 make
 ./reservas
+```
+
+O programa mantém também a interface de terminal, disponível separadamente:
+
+```sh
+make cli
+./reservas_cli
+```
+
+Na interface gráfica, use o menu lateral para cadastrar clientes e quadras,
+criar e administrar reservas, registrar avaliações e gerenciar manutenções.
+Os campos de data e hora na lateral permitem ajustar o relógio do sistema.
+
+## Testar
+
+Os testes das regras não dependem da SFML:
+
+```sh
 make test
 ```
 
