@@ -1,4 +1,4 @@
-#include "gui/app.hpp"
+#include "include/gui/app.hpp"
 
 #include <iostream>
 #include <stdexcept>
