@@ -17,6 +17,10 @@ para testes determinísticos. Na CLI, as opções **Concluir reserva** e
 Ao criar uma reserva com objetos externos à fachada, mantenha o cliente e a quadra
 vivos até a reserva ser destruída.
 
+As quadras podem ser simples, cobertas (+15%), iluminadas (+R$ 10 por hora a partir
+das 18h) ou premium (combina os dois adicionais). Esses adicionais são aplicados
+ao valor calculado pela estratégia de preço selecionada.
+
 ## Compilar e testar
 
 Com `g++` e `make` instalados:

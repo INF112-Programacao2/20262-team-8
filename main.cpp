@@ -2,6 +2,7 @@
 #include "models/quadra.hpp"
 #include "models/reserva.hpp"
 #include "models/sistemagestao.hpp"
+#include "enums/Categoria.hpp"
 #include "enums/TipoEstrategia.hpp"
 
 #include <cmath>
@@ -154,6 +155,20 @@ int main() {
                 continue;
             }
 
+            const Categoria categoriasDisponiveis[] = {
+                Categoria::Simples, Categoria::Coberta,
+                Categoria::Iluminada, Categoria::Premium
+            };
+            std::cout << "Categorias:\n"
+                      << "1 - Simples (sem adicional)\n"
+                      << "2 - Coberta (+15%)\n"
+                      << "3 - Iluminada (+R$ 10/h a partir das 18h)\n"
+                      << "4 - Premium (coberta e iluminada)\n";
+            int categoria;
+            if (!lerInteiro("Escolha a categoria: ", 1, 4, categoria)) {
+                break;
+            }
+
             const TipoEstrategia estrategiasDisponiveis[] = {
                 TipoEstrategia::Padrao, TipoEstrategia::Mensalista, TipoEstrategia::Pico
             };
@@ -168,7 +183,8 @@ int main() {
 
             const int quadraId = sistema.cadastrarQuadra(
                 nome, localizacao, modalidades, preco,
-                estrategiasDisponiveis[estrategia - 1]);
+                estrategiasDisponiveis[estrategia - 1],
+                categoriasDisponiveis[categoria - 1]);
             std::cout << "Quadra cadastrada. ID: " << quadraId << '\n';
         } else if (opcao == 3) {
             if (sistema.getQtdClientes() == 0 || sistema.getQtdQuadras() == 0) {

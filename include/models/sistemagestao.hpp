@@ -4,6 +4,7 @@
 #include "../models/cliente.hpp"
 #include "../models/quadra.hpp"
 #include "../models/reserva.hpp"
+#include "enums/Categoria.hpp"
 #include "services/servicoClientes.hpp"
 #include "services/servicoQuadras.hpp"
 #include "services/servicoReservas.hpp"
@@ -23,7 +24,8 @@ public:
     Cliente* getCliente(int indice) const;
     int cadastrarQuadra(const std::string& nome, const std::string& localizacao,
                         const std::vector<TipoQuadra>& tipos, double precoHora,
-                        TipoEstrategia estrategia = TipoEstrategia::Padrao);
+                        TipoEstrategia estrategia = TipoEstrategia::Padrao,
+                        Categoria categoria = Categoria::Simples);
     int getQtdQuadras() const;
     Quadra* getQuadra(int indice) const;
 

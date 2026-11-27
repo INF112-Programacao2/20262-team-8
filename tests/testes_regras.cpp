@@ -3,6 +3,7 @@
 #include "models/sistemagestao.hpp"
 
 #include <cassert>
+#include <cmath>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -80,6 +81,35 @@ void testaCadastroDeQuadrasPelaFachada() {
     Reserva* reserva = sistema.criarReserva(
         *sistema.getCliente(0), *sistema.getQuadra(0), "2027-02-28", 18, 2);
     assert(reserva->getValorTotal() == 240.0);
+}
+
+void testaCategoriasEAdicionaisDePreco() {
+    SistemaGestao sistema;
+    const std::vector<TipoQuadra> tipos{FUTEBOL};
+    assert(sistema.definirDataHoje("2027-02-27"));
+
+    sistema.cadastrarQuadra(
+        "Simples", "Centro", tipos, 100.0, TipoEstrategia::Padrao,
+        Categoria::Simples);
+    sistema.cadastrarQuadra(
+        "Coberta", "Centro", tipos, 100.0, TipoEstrategia::Padrao,
+        Categoria::Coberta);
+    sistema.cadastrarQuadra(
+        "Iluminada", "Centro", tipos, 100.0, TipoEstrategia::Padrao,
+        Categoria::Iluminada);
+    sistema.cadastrarQuadra(
+        "Premium", "Centro", tipos, 100.0, TipoEstrategia::Mensalista,
+        Categoria::Premium);
+
+    assert(sistema.getQuadra(0)->getCategoria() == "Simples");
+    assert(sistema.getQuadra(1)->getCategoria() == "Coberta");
+    assert(sistema.getQuadra(2)->getCategoria() == "Iluminada");
+    assert(sistema.getQuadra(3)->getCategoria() == "Premium");
+    assert(std::abs(sistema.getQuadra(0)->calcularValorReserva(2, 17) - 200.0) < 1e-9);
+    assert(std::abs(sistema.getQuadra(1)->calcularValorReserva(2, 17) - 230.0) < 1e-9);
+    assert(std::abs(sistema.getQuadra(2)->calcularValorReserva(2, 17) - 210.0) < 1e-9);
+    assert(sistema.getQuadra(3)->getNomeEstrategiaPreco() == "Mensalista");
+    assert(std::abs(sistema.getQuadra(3)->calcularValorReserva(2, 17) - 205.5) < 1e-9);
 }
 
 void testaReservasPertencemAoServico() {
@@ -187,6 +217,7 @@ int main() {
     testaReservasEAvaliaDisponibilidade();
     testaCadastroDeClientesPelaFachada();
     testaCadastroDeQuadrasPelaFachada();
+    testaCategoriasEAdicionaisDePreco();
     testaReservasPertencemAoServico();
     testaEstadosDeReservaEHorario();
     testaFaltasBloqueiamCliente();

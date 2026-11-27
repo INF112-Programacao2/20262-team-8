@@ -2,13 +2,34 @@
 
 #include "estrategias/estrategiaPreco.hpp"
 
+#include <stdexcept>
 #include <utility>
 
 int ServicoQuadras::cadastrar(const std::string& nome, const std::string& localizacao,
                               const std::vector<TipoQuadra>& tipos, double precoHora,
-                              TipoEstrategia estrategia) {
-    auto quadra = std::make_unique<Quadra>(
-        nome, localizacao, tipos, precoHora, criarEstrategia(estrategia));
+                              TipoEstrategia estrategia, Categoria categoria) {
+    std::unique_ptr<Quadra> quadra;
+    switch (categoria) {
+        case Categoria::Simples:
+            quadra = std::make_unique<Quadra>(
+                nome, localizacao, tipos, precoHora, criarEstrategia(estrategia));
+            break;
+        case Categoria::Coberta:
+            quadra = std::make_unique<QuadraCoberta>(
+                nome, localizacao, tipos, precoHora, criarEstrategia(estrategia));
+            break;
+        case Categoria::Iluminada:
+            quadra = std::make_unique<QuadraIluminada>(
+                nome, localizacao, tipos, precoHora, criarEstrategia(estrategia));
+            break;
+        case Categoria::Premium:
+            quadra = std::make_unique<QuadraPremium>(
+                nome, localizacao, tipos, precoHora, criarEstrategia(estrategia));
+            break;
+        default:
+            throw std::invalid_argument("Categoria de quadra invalida.");
+    }
+
     const int id = quadra->getId();
     quadras.push_back(std::move(quadra));
     return id;
