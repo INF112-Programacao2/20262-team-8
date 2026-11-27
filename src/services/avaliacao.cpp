@@ -1,39 +1,40 @@
-#include "models/avaliacao.hpp"
-
-static int gerarIdAvaliacao() {
-    static int id = 0;
-    return ++id;
-}
+#include "modelos/avaliacao.hpp"
+#include "util/geradorId.hpp"
 
 Avaliacao::Avaliacao(int reservaId, int clienteId, int quadraId, int nota,
-                     const std::string& comentario)
-    : id(gerarIdAvaliacao()), reservaId(reservaId), clienteId(clienteId),
-      quadraId(quadraId), nota(nota), comentario(comentario) {}
+                     const std::string& comentario) {
+    id_ = proximoId<Avaliacao>();
+    reservaId_ = reservaId;
+    clienteId_ = clienteId;
+    quadraId_ = quadraId;
+    nota_ = nota;
+    comentario_ = comentario;
+}
 
 int Avaliacao::getId() const {
-    return id;
+    return id_;
 }
 
 int Avaliacao::getReservaId() const {
-    return reservaId;
+    return reservaId_;
 }
 
 int Avaliacao::getClienteId() const {
-    return clienteId;
+    return clienteId_;
 }
 
 int Avaliacao::getQuadraId() const {
-    return quadraId;
+    return quadraId_;
 }
 
 int Avaliacao::getNota() const {
-    return nota;
+    return nota_;
 }
 
 std::string Avaliacao::getComentario() const {
-    return comentario;
+    return comentario_;
 }
 
 bool Avaliacao::ehReclamacao() const {
-    return nota <= 2;
+    return nota_ <= 2;
 }
