@@ -8,9 +8,11 @@ class Reserva;
 
 class Cliente {
     private:
+        static const int limiteFaltas = 3;
         int id;
         std::string nome;
         std::string email;
+        int faltas;
         // Referencias nao proprietarias; ServicoReservas e dono das reservas.
         std::vector<Reserva*> reservas;
     public:
@@ -24,6 +26,10 @@ class Cliente {
         
         void adicionarReserva(Reserva* reserva);
         void removerReserva(const Reserva* reserva);
+        int getFaltas() const;
+        bool estaBloqueado() const;
+        void registrarFalta();
+        void zerarFaltas();
 };
 
 #endif

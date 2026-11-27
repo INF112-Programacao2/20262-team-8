@@ -10,7 +10,7 @@ static int gerarId() {
 }
 
 Cliente::Cliente(const std::string& nome, const std::string& email)
-    : id(gerarId()), nome(nome), email(email) {}
+    : id(gerarId()), nome(nome), email(email), faltas(0) {}
 
 std::vector<Reserva*> Cliente::getReservas() const {
     return reservas;
@@ -24,6 +24,22 @@ void Cliente::adicionarReserva(Reserva* reserva) {
 
 void Cliente::removerReserva(const Reserva* reserva) {
     reservas.erase(std::remove(reservas.begin(), reservas.end(), reserva), reservas.end());
+}
+
+int Cliente::getFaltas() const {
+    return faltas;
+}
+
+bool Cliente::estaBloqueado() const {
+    return faltas >= limiteFaltas;
+}
+
+void Cliente::registrarFalta() {
+    ++faltas;
+}
+
+void Cliente::zerarFaltas() {
+    faltas = 0;
 }
 
 int Cliente::getId() const {

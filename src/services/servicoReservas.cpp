@@ -1,7 +1,47 @@
 #include "services/servicoReservas.hpp"
 
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
+
+ServicoReservas::ServicoReservas() {
+    const std::time_t instante = std::time(nullptr);
+    const std::tm* horarioLocal = std::localtime(&instante);
+    if (horarioLocal == nullptr) {
+        throw std::runtime_error("Nao foi possivel obter a data e hora locais.");
+    }
+
+    std::ostringstream dataFormatada;
+    dataFormatada << std::put_time(horarioLocal, "%Y-%m-%d");
+    dataHoje = dataFormatada.str();
+    horaAgora = horarioLocal->tm_hour;
+}
+
+bool ServicoReservas::definirDataHoje(const std::string& data) {
+    if (!dataValida(data)) {
+        return false;
+    }
+    dataHoje = data;
+    return true;
+}
+
+std::string ServicoReservas::getDataHoje() const {
+    return dataHoje;
+}
+
+bool ServicoReservas::definirHoraAgora(int hora) {
+    if (hora < 0 || hora > 23) {
+        return false;
+    }
+    horaAgora = hora;
+    return true;
+}
+
+int ServicoReservas::getHoraAgora() const {
+    return horaAgora;
+}
 
 bool ServicoReservas::ehAnoBissexto(int ano) {
     return ano % 400 == 0 || (ano % 4 == 0 && ano % 100 != 0);
@@ -37,6 +77,12 @@ Reserva* ServicoReservas::criarReserva(Cliente& cliente, Quadra& quadra,
                                        const std::string& data, int horarioInicio,
                                        int duracaoHoras) {
     validarDadosReserva(data, horarioInicio, duracaoHoras);
+    if (data < dataHoje) {
+        throw std::invalid_argument("Nao e possivel criar uma reserva em uma data passada.");
+    }
+    if (cliente.estaBloqueado()) {
+        throw std::runtime_error("Cliente bloqueado por faltas sem aviso.");
+    }
     if (!verificarDisponibilidade(quadra, data, horarioInicio, duracaoHoras)) {
         throw std::runtime_error("A quadra ja possui uma reserva nesse horario.");
     }
@@ -51,12 +97,30 @@ Reserva* ServicoReservas::criarReserva(Cliente& cliente, Quadra& quadra,
 
 bool ServicoReservas::cancelarReserva(Reserva& reserva) {
     for (const auto& reservaGerenciada : reservas) {
-        if (reservaGerenciada.get() == &reserva && reservaGerenciada->estaAtiva()) {
-            reserva.cancelarReserva();
-            return true;
+        if (reservaGerenciada.get() == &reserva) {
+            return reserva.estaAtiva() && reserva.getDataReserva() >= dataHoje &&
+                   reserva.cancelarReserva();
         }
     }
     return false;
+}
+
+bool ServicoReservas::concluirReserva(Reserva& reserva) {
+    if (!pertenceAoServico(reserva) || !reserva.estaAtiva() || !jaComecou(reserva)) {
+        return false;
+    }
+    return reserva.concluir();
+}
+
+bool ServicoReservas::registrarFalta(Reserva& reserva) {
+    if (!pertenceAoServico(reserva) || !reserva.estaAtiva() || !jaComecou(reserva)) {
+        return false;
+    }
+    if (!reserva.registrarFalta()) {
+        return false;
+    }
+    reserva.getCliente()->registrarFalta();
+    return true;
 }
 
 std::vector<Reserva*> ServicoReservas::listarReservasAtivas() const {
@@ -67,6 +131,21 @@ std::vector<Reserva*> ServicoReservas::listarReservasAtivas() const {
         }
     }
     return reservasAtivas;
+}
+
+bool ServicoReservas::pertenceAoServico(const Reserva& reserva) const {
+    for (const auto& reservaGerenciada : reservas) {
+        if (reservaGerenciada.get() == &reserva) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ServicoReservas::jaComecou(const Reserva& reserva) const {
+    return reserva.getDataReserva() < dataHoje ||
+           (reserva.getDataReserva() == dataHoje &&
+            reserva.getHorarioInicio() <= horaAgora);
 }
 
 bool ServicoReservas::verificarDisponibilidade(const Quadra& quadra,

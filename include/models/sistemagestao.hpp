@@ -13,6 +13,11 @@
 
 class SistemaGestao {
 public:
+    bool definirDataHoje(const std::string& data);
+    std::string getDataHoje() const;
+    bool definirHoraAgora(int hora);
+    int getHoraAgora() const;
+
     int cadastrarCliente(const std::string& nome, const std::string& email);
     int getQtdClientes() const;
     Cliente* getCliente(int indice) const;
@@ -22,8 +27,11 @@ public:
     int getQtdQuadras() const;
     Quadra* getQuadra(int indice) const;
 
+    // Cliente e quadra devem permanecer vivos enquanto a reserva existir.
     Reserva* criarReserva(Cliente& cliente, Quadra& quadra, const std::string& data, int horarioInicio, int duracaoHoras);
     bool cancelarReserva(Reserva& reserva);
+    bool concluirReserva(Reserva& reserva);
+    bool registrarFalta(Reserva& reserva);
     std::vector<Reserva*> listarReservasAtivas() const;
     bool verificarDisponibilidade(const Quadra& quadra, const std::string& data, int horarioInicio, int duracaoHoras) const;
 private:

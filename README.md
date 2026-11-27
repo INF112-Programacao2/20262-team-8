@@ -8,6 +8,15 @@ O `SistemaGestao` funciona como fachada: a CLI delega a gestão de clientes, qua
 e reservas aos serviços do domínio. Cada serviço é dono dos objetos que cria;
 o cliente mantém apenas referências às reservas associadas.
 
+Reservas têm os estados **Confirmada**, **Concluida**, **Cancelada** e **Falta**.
+Só reservas confirmadas ocupam horários. A conclusão e o registro de falta só são
+permitidos a partir do início agendado; três faltas bloqueiam novas reservas do cliente.
+O sistema usa a data e hora locais do computador, e a fachada permite ajustá-las
+para testes determinísticos. Na CLI, as opções **Concluir reserva** e
+**Registrar falta** só aceitam reservas cujo horário de início já chegou.
+Ao criar uma reserva com objetos externos à fachada, mantenha o cliente e a quadra
+vivos até a reserva ser destruída.
+
 ## Compilar e testar
 
 Com `g++` e `make` instalados:

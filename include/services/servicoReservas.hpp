@@ -11,9 +11,18 @@
 
 class ServicoReservas {
 public:
+    ServicoReservas();
+
+    bool definirDataHoje(const std::string& data);
+    std::string getDataHoje() const;
+    bool definirHoraAgora(int hora);
+    int getHoraAgora() const;
+
     Reserva* criarReserva(Cliente& cliente, Quadra& quadra, const std::string& data,
                           int horarioInicio, int duracaoHoras);
     bool cancelarReserva(Reserva& reserva);
+    bool concluirReserva(Reserva& reserva);
+    bool registrarFalta(Reserva& reserva);
     std::vector<Reserva*> listarReservasAtivas() const;
     bool verificarDisponibilidade(const Quadra& quadra, const std::string& data,
                                   int horarioInicio, int duracaoHoras) const;
@@ -21,9 +30,13 @@ public:
 private:
     void validarDadosReserva(const std::string& data, int horarioInicio,
                              int duracaoHoras) const;
+    bool pertenceAoServico(const Reserva& reserva) const;
+    bool jaComecou(const Reserva& reserva) const;
     static bool ehAnoBissexto(int ano);
     static bool dataValida(const std::string& data);
 
+    std::string dataHoje;
+    int horaAgora;
     std::vector<std::unique_ptr<Reserva>> reservas;
 };
 

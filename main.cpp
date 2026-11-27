@@ -69,10 +69,12 @@ int main() {
                   << "4 - Listar clientes e quadras\n"
                   << "5 - Listar reservas ativas\n"
                   << "6 - Cancelar reserva\n"
+                  << "7 - Concluir reserva\n"
+                  << "8 - Registrar falta\n"
                   << "0 - Sair\n";
 
         int opcao;
-        if (!lerInteiro("Escolha uma opcao: ", 0, 6, opcao) || opcao == 0) {
+        if (!lerInteiro("Escolha uma opcao: ", 0, 8, opcao) || opcao == 0) {
             break;
         }
 
@@ -246,7 +248,7 @@ int main() {
                 }
                 std::cout << '\n';
             }
-        } else if (opcao == 5 || opcao == 6) {
+        } else if (opcao >= 5 && opcao <= 8) {
             const auto reservas = sistema.listarReservasAtivas();
             if (reservas.empty()) {
                 std::cout << "Nao ha reservas ativas.\n";
@@ -264,16 +266,33 @@ int main() {
                           << " | Valor: R$ " << reserva->getValorTotal() << '\n';
             }
 
-            if (opcao == 6) {
+            if (opcao >= 6) {
                 int indiceReserva;
-                if (!lerInteiro("Numero da reserva para cancelar: ", 1,
+                if (!lerInteiro("Numero da reserva: ", 1,
                                 static_cast<int>(reservas.size()), indiceReserva)) {
                     break;
                 }
-                if (sistema.cancelarReserva(*reservas[indiceReserva - 1])) {
-                    std::cout << "Reserva cancelada.\n";
+                Reserva& selecionada = *reservas[indiceReserva - 1];
+                if (opcao == 6) {
+                    if (sistema.cancelarReserva(selecionada)) {
+                        std::cout << "Reserva cancelada.\n";
+                    } else {
+                        std::cout << "A reserva nao pode ser cancelada.\n";
+                    }
+                } else if (opcao == 7) {
+                    if (sistema.concluirReserva(selecionada)) {
+                        std::cout << "Reserva concluida.\n";
+                    } else {
+                        std::cout << "A reserva ainda nao comecou ou nao esta confirmada.\n";
+                    }
+                } else if (sistema.registrarFalta(selecionada)) {
+                    std::cout << "Falta registrada. Total de faltas do cliente: "
+                              << selecionada.getCliente()->getFaltas() << '\n';
+                    if (selecionada.getCliente()->estaBloqueado()) {
+                        std::cout << "Cliente bloqueado por faltas sem aviso.\n";
+                    }
                 } else {
-                    std::cout << "A reserva selecionada nao esta mais ativa.\n";
+                    std::cout << "A falta nao pode ser registrada antes do inicio da reserva.\n";
                 }
             }
         }

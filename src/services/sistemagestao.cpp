@@ -1,5 +1,21 @@
 #include "models/sistemagestao.hpp"
 
+bool SistemaGestao::definirDataHoje(const std::string& data) {
+    return servicoReservas.definirDataHoje(data);
+}
+
+std::string SistemaGestao::getDataHoje() const {
+    return servicoReservas.getDataHoje();
+}
+
+bool SistemaGestao::definirHoraAgora(int hora) {
+    return servicoReservas.definirHoraAgora(hora);
+}
+
+int SistemaGestao::getHoraAgora() const {
+    return servicoReservas.getHoraAgora();
+}
+
 int SistemaGestao::cadastrarCliente(const std::string& nome, const std::string& email) {
     return servicoClientes.cadastrar(nome, email);
 }
@@ -32,6 +48,14 @@ Reserva* SistemaGestao::criarReserva(Cliente& cliente, Quadra& quadra, const std
 
 bool SistemaGestao::cancelarReserva(Reserva& reserva) {
     return servicoReservas.cancelarReserva(reserva);
+}
+
+bool SistemaGestao::concluirReserva(Reserva& reserva) {
+    return servicoReservas.concluirReserva(reserva);
+}
+
+bool SistemaGestao::registrarFalta(Reserva& reserva) {
+    return servicoReservas.registrarFalta(reserva);
 }
 
 std::vector<Reserva*> SistemaGestao::listarReservasAtivas() const {

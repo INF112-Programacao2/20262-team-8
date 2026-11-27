@@ -1,6 +1,8 @@
 #ifndef RESERVA_HPP
 #define RESERVA_HPP
 
+#include "enums/StatusReserva.hpp"
+
 #include <string>
 #include "cliente.hpp"
 #include "quadra.hpp"
@@ -13,7 +15,7 @@ class Reserva {
         int horarioInicio;
         double valorTotal;
         int duracao;
-        bool ativa;
+        StatusReserva status;
     public:
         Reserva(Cliente* cli, Quadra* q, const std::string& dt, int hrInicio, int horas);
         ~Reserva();
@@ -26,11 +28,16 @@ class Reserva {
         int getHorarioInicio() const;
         double getValorTotal() const;
         int getDuracaoHoras() const;
+        int getHorarioFim() const;
+        StatusReserva getStatus() const;
+        std::string getStatusTexto() const;
         bool estaAtiva() const;
 
         void validarHorarios();
         void solicitarCalculoValor();
-        void cancelarReserva();
+        bool cancelarReserva();
+        bool concluir();
+        bool registrarFalta();
         bool temConflitoComOutraReserva(const Reserva& outra) const;
 };
 

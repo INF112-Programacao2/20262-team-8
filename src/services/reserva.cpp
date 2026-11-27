@@ -4,7 +4,7 @@
 
 Reserva::Reserva(Cliente* cli, Quadra* q, const std::string& dt, int hrInicio, int horas)
     : cliente(cli), quadra(q), dataReserva(dt), horarioInicio(hrInicio), duracao(horas),
-      ativa(true) {
+      status(StatusReserva::Confirmada) {
     validarHorarios();
     solicitarCalculoValor();
     if (cliente != nullptr) {
@@ -40,8 +40,28 @@ void Reserva::solicitarCalculoValor() {
     }
 }
 
-void Reserva::cancelarReserva() {
-    ativa = false;
+bool Reserva::cancelarReserva() {
+    if (!estaAtiva()) {
+        return false;
+    }
+    status = StatusReserva::Cancelada;
+    return true;
+}
+
+bool Reserva::concluir() {
+    if (!estaAtiva()) {
+        return false;
+    }
+    status = StatusReserva::Concluida;
+    return true;
+}
+
+bool Reserva::registrarFalta() {
+    if (!estaAtiva()) {
+        return false;
+    }
+    status = StatusReserva::Falta;
+    return true;
 }
 
 bool Reserva::temConflitoComOutraReserva(const Reserva& outra) const {
@@ -57,6 +77,24 @@ bool Reserva::temConflitoComOutraReserva(const Reserva& outra) const {
 
 int Reserva::getDuracaoHoras() const {
     return duracao;
+}
+
+int Reserva::getHorarioFim() const {
+    return horarioInicio + duracao;
+}
+
+StatusReserva Reserva::getStatus() const {
+    return status;
+}
+
+std::string Reserva::getStatusTexto() const {
+    switch (status) {
+        case StatusReserva::Confirmada: return "Confirmada";
+        case StatusReserva::Concluida: return "Concluida";
+        case StatusReserva::Cancelada: return "Cancelada";
+        case StatusReserva::Falta: return "Falta";
+    }
+    return "Desconhecido";
 }
 
 double Reserva::getValorTotal() const {
@@ -80,5 +118,5 @@ int Reserva::getHorarioInicio() const {
 }
 
 bool Reserva::estaAtiva() const {
-    return ativa;
+    return status == StatusReserva::Confirmada;
 }
