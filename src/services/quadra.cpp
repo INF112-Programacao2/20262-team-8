@@ -13,7 +13,8 @@ Quadra::Quadra(const std::string& nome, const std::string& local,
                std::unique_ptr<EstrategiaPreco> estrategiaPreco,
                std::unique_ptr<PoliticaCancelamento> politicaCancelamento)
     : id(gerarId()), nome(nome), localizacao(local), tipos(tipos),
-      precoHora(preco), ativa(true), estrategiaPreco(std::move(estrategiaPreco)),
+      precoHora(preco), ativa(true), reclamacoes(0),
+      estrategiaPreco(std::move(estrategiaPreco)),
       politicaCancelamento(std::move(politicaCancelamento)) {
     if (!this->estrategiaPreco) {
         this->estrategiaPreco = std::make_unique<EstrategiaPadrao>();
@@ -96,6 +97,18 @@ double Quadra::getPrecoHora() const {
 
 bool Quadra::isAtiva() const {
     return ativa;
+}
+
+void Quadra::setAtiva(bool valor) {
+    ativa = valor;
+}
+
+int Quadra::getReclamacoes() const {
+    return reclamacoes;
+}
+
+void Quadra::adicionarReclamacao() {
+    ++reclamacoes;
 }
 
 std::string Quadra::getNomeEstrategiaPreco() const {

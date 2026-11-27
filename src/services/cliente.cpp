@@ -1,6 +1,7 @@
 #include "models/cliente.hpp"
 
 #include <algorithm>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -10,7 +11,7 @@ static int gerarId() {
 }
 
 Cliente::Cliente(const std::string& nome, const std::string& email)
-    : id(gerarId()), nome(nome), email(email), faltas(0) {}
+    : id(gerarId()), nome(nome), email(email), faltas(0), descontoProximaReserva(0) {}
 
 std::vector<Reserva*> Cliente::getReservas() const {
     return reservas;
@@ -40,6 +41,26 @@ void Cliente::registrarFalta() {
 
 void Cliente::zerarFaltas() {
     faltas = 0;
+}
+
+int Cliente::getDescontoProximaReserva() const {
+    return descontoProximaReserva;
+}
+
+void Cliente::setDescontoProximaReserva(int percentual) {
+    if (percentual < 0 || percentual > 100) {
+        throw std::invalid_argument("O desconto deve estar entre 0 e 100%.");
+    }
+    descontoProximaReserva = percentual;
+}
+
+void Cliente::receberCupom(int percentual) {
+    if (percentual < 0 || percentual > 100) {
+        throw std::invalid_argument("O desconto deve estar entre 0 e 100%.");
+    }
+    if (percentual > descontoProximaReserva) {
+        descontoProximaReserva = percentual;
+    }
 }
 
 int Cliente::getId() const {

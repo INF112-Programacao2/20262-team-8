@@ -259,6 +259,99 @@ void testaFaltasBloqueiamCliente() {
     assert(cliente.getFaltas() == 0);
 }
 
+void testaAvaliacoesEReclamacoes() {
+    SistemaGestao sistema;
+    assert(sistema.definirDataHoje("2027-01-01"));
+    assert(sistema.definirHoraAgora(0));
+    const int cliente1Id = sistema.cadastrarCliente("Ana", "ana@example.com");
+    const int cliente2Id = sistema.cadastrarCliente("Bruno", "bruno@example.com");
+    const int cliente3Id = sistema.cadastrarCliente("Carla", "carla@example.com");
+    const std::vector<TipoQuadra> tipos{FUTEBOL};
+    const int quadraDestaqueId = sistema.cadastrarQuadra(
+        "Destaque", "Centro", tipos, 100.0);
+    const int quadraReclamacaoId = sistema.cadastrarQuadra(
+        "Em revisao", "Bairro", tipos, 100.0);
+    Quadra* quadraDestaque = sistema.getQuadra(0);
+    Quadra* quadraReclamacao = sistema.getQuadra(1);
+    Cliente* cliente1 = sistema.getCliente(0);
+    Cliente* cliente2 = sistema.getCliente(1);
+    Cliente* cliente3 = sistema.getCliente(2);
+    assert(cliente1->getId() == cliente1Id);
+    assert(cliente2->getId() == cliente2Id);
+    assert(cliente3->getId() == cliente3Id);
+    assert(quadraReclamacao->getId() == quadraReclamacaoId);
+
+    auto concluirReservaDoDia = [&](Cliente& cliente, Quadra& quadra,
+                                    const std::string& data, int hora) {
+        assert(sistema.definirDataHoje(data));
+        assert(sistema.definirHoraAgora(0));
+        Reserva* reserva = sistema.criarReserva(cliente, quadra, data, hora, 1);
+        assert(sistema.definirHoraAgora(hora));
+        assert(sistema.concluirReserva(*reserva));
+        return reserva;
+    };
+
+    Reserva* pendente = sistema.criarReserva(
+        *cliente1, *quadraDestaque, "2027-01-01", 11, 1);
+    assert(sistema.avaliarReserva(pendente->getId(), 5, "Ainda nao concluida") == -1);
+    assert(sistema.cancelarReserva(*pendente));
+
+    Reserva* primeiroDestaque = concluirReservaDoDia(
+        *cliente1, *quadraDestaque, "2027-01-01", 10);
+    assert(sistema.avaliarReserva(primeiroDestaque->getId(), 6, "Nota invalida") == -1);
+    assert(sistema.avaliarReserva(primeiroDestaque->getId(), 5, "Excelente") > 0);
+    assert(sistema.avaliarReserva(primeiroDestaque->getId(), 5, "Duplicada") == -1);
+
+    Reserva* segundoDestaque = concluirReservaDoDia(
+        *cliente2, *quadraDestaque, "2027-01-02", 10);
+    assert(sistema.avaliarReserva(segundoDestaque->getId(), 4, "Muito bom") > 0);
+    Reserva* terceiroDestaque = concluirReservaDoDia(
+        *cliente3, *quadraDestaque, "2027-01-03", 10);
+    assert(sistema.avaliarReserva(terceiroDestaque->getId(), 5, "Excelente") > 0);
+
+    assert(sistema.getQtdAvaliacoes() == 3);
+    assert(sistema.getAvaliacao(0)->getReservaId() == primeiroDestaque->getId());
+    assert(sistema.getAvaliacao(-1) == nullptr);
+    assert(sistema.getAvaliacao(3) == nullptr);
+    assert(sistema.contarAvaliacoesDaQuadra(quadraDestaqueId) == 3);
+    assert(std::abs(sistema.mediaDaQuadra(quadraDestaqueId) - (14.0 / 3.0)) < 1e-9);
+    assert(sistema.quadraEmDestaque(quadraDestaqueId));
+
+    Reserva* primeiraReclamacao = concluirReservaDoDia(
+        *cliente1, *quadraReclamacao, "2027-01-04", 10);
+    assert(sistema.avaliarReserva(primeiraReclamacao->getId(), 1, "Ruim") > 0);
+    assert(cliente1->getDescontoProximaReserva() == 15);
+    assert(quadraReclamacao->getReclamacoes() == 1);
+
+    assert(sistema.definirDataHoje("2027-01-05"));
+    assert(sistema.definirHoraAgora(0));
+    Reserva* reservaComCupom = sistema.criarReserva(
+        *cliente1, *quadraDestaque, "2027-01-05", 12, 1);
+    assert(reservaComCupom->getDescontoPercentual() == 15);
+    assert(reservaComCupom->getValorTotal() == 85.0);
+    assert(cliente1->getDescontoProximaReserva() == 0);
+
+    Reserva* segundaReclamacao = concluirReservaDoDia(
+        *cliente2, *quadraReclamacao, "2027-01-05", 10);
+    assert(sistema.avaliarReserva(segundaReclamacao->getId(), 2, "Ruim") > 0);
+    assert(cliente2->getDescontoProximaReserva() == 15);
+
+    Reserva* terceiraReclamacao = concluirReservaDoDia(
+        *cliente3, *quadraReclamacao, "2027-01-06", 10);
+    assert(sistema.avaliarReserva(terceiraReclamacao->getId(), 1, "Ruim") > 0);
+    assert(quadraReclamacao->getReclamacoes() == 3);
+    assert(!quadraReclamacao->isAtiva());
+
+    bool quadraInativaRejeitada = false;
+    try {
+        sistema.criarReserva(
+            *cliente2, *quadraReclamacao, "2027-01-07", 10, 1);
+    } catch (const std::runtime_error&) {
+        quadraInativaRejeitada = true;
+    }
+    assert(quadraInativaRejeitada);
+}
+
 } // namespace
 
 int main() {
@@ -270,4 +363,5 @@ int main() {
     testaReservasPertencemAoServico();
     testaEstadosDeReservaEHorario();
     testaFaltasBloqueiamCliente();
+    testaAvaliacoesEReclamacoes();
 }

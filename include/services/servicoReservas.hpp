@@ -24,6 +24,8 @@ public:
     bool concluirReserva(Reserva& reserva);
     bool registrarFalta(Reserva& reserva);
     std::vector<Reserva*> listarReservasAtivas() const;
+    std::vector<Reserva*> listarReservasConcluidas() const;
+    Reserva* buscarPorId(int id) const;
     bool verificarDisponibilidade(const Quadra& quadra, const std::string& data,
                                   int horarioInicio, int duracaoHoras) const;
 

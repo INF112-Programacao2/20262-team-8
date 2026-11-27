@@ -18,6 +18,7 @@ protected:
     std::vector<TipoQuadra> tipos;
     double precoHora;
     bool ativa;
+    int reclamacoes;
     std::unique_ptr<EstrategiaPreco> estrategiaPreco;
     std::unique_ptr<PoliticaCancelamento> politicaCancelamento;
 public:
@@ -33,6 +34,9 @@ public:
     std::vector<TipoQuadra> getTipos() const;
     double getPrecoHora() const;
     bool isAtiva() const;
+    void setAtiva(bool ativa);
+    int getReclamacoes() const;
+    void adicionarReclamacao();
     std::string getNomeEstrategiaPreco() const;
     const PoliticaCancelamento* getPoliticaCancelamento() const;
 

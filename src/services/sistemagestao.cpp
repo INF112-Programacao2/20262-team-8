@@ -1,5 +1,8 @@
 #include "models/sistemagestao.hpp"
 
+SistemaGestao::SistemaGestao()
+    : servicoAvaliacoes(servicoReservas) {}
+
 bool SistemaGestao::definirDataHoje(const std::string& data) {
     return servicoReservas.definirDataHoje(data);
 }
@@ -60,8 +63,37 @@ bool SistemaGestao::registrarFalta(Reserva& reserva) {
     return servicoReservas.registrarFalta(reserva);
 }
 
+int SistemaGestao::avaliarReserva(int reservaId, int nota,
+                                  const std::string& comentario) {
+    return servicoAvaliacoes.avaliar(reservaId, nota, comentario);
+}
+
 std::vector<Reserva*> SistemaGestao::listarReservasAtivas() const {
     return servicoReservas.listarReservasAtivas();
+}
+
+std::vector<Reserva*> SistemaGestao::listarReservasConcluidas() const {
+    return servicoReservas.listarReservasConcluidas();
+}
+
+double SistemaGestao::mediaDaQuadra(int quadraId) const {
+    return servicoAvaliacoes.mediaDaQuadra(quadraId);
+}
+
+int SistemaGestao::contarAvaliacoesDaQuadra(int quadraId) const {
+    return servicoAvaliacoes.contarDaQuadra(quadraId);
+}
+
+bool SistemaGestao::quadraEmDestaque(int quadraId) const {
+    return servicoAvaliacoes.quadraEmDestaque(quadraId);
+}
+
+int SistemaGestao::getQtdAvaliacoes() const {
+    return servicoAvaliacoes.quantidade();
+}
+
+const Avaliacao* SistemaGestao::getAvaliacao(int indice) const {
+    return servicoAvaliacoes.obter(indice);
 }
 
 bool SistemaGestao::verificarDisponibilidade(const Quadra& quadra, const std::string& data, int horarioInicio, int duracaoHoras) const {

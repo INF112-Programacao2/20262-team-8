@@ -27,6 +27,11 @@ três dias, 50% com um ou dois dias e 0% no mesmo dia; **Rígida** devolve 50% a
 partir de sete dias e 0% com menos antecedência. O reembolso é calculado sobre o
 valor pago pela reserva, e reservas de dias anteriores não podem ser canceladas.
 
+Reservas concluídas podem ser avaliadas uma vez, com nota de 1 a 5. Notas 1 e 2
+são reclamações: concedem ao cliente um cupom de 15% para a próxima reserva, e
+três reclamações deixam a quadra inativa para revisão. Uma média de pelo menos
+4,5 com três ou mais avaliações destaca a quadra.
+
 ## Compilar e testar
 
 Com `g++` e `make` instalados:

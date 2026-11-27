@@ -100,15 +100,22 @@ Reserva* ServicoReservas::criarReserva(Cliente& cliente, Quadra& quadra,
     if (cliente.estaBloqueado()) {
         throw std::runtime_error("Cliente bloqueado por faltas sem aviso.");
     }
+    if (!quadra.isAtiva()) {
+        throw std::runtime_error("A quadra esta inativa.");
+    }
     if (!verificarDisponibilidade(quadra, data, horarioInicio, duracaoHoras)) {
         throw std::runtime_error("A quadra ja possui uma reserva nesse horario.");
     }
 
     reservas.reserve(reservas.size() + 1);
+    const int desconto = cliente.getDescontoProximaReserva();
     auto reserva = std::make_unique<Reserva>(&cliente, &quadra, data, horarioInicio,
-                                             duracaoHoras);
+                                             duracaoHoras, desconto);
     Reserva* reservaCriada = reserva.get();
     reservas.push_back(std::move(reserva));
+    if (desconto > 0) {
+        cliente.setDescontoProximaReserva(0);
+    }
     return reservaCriada;
 }
 
@@ -154,6 +161,25 @@ std::vector<Reserva*> ServicoReservas::listarReservasAtivas() const {
         }
     }
     return reservasAtivas;
+}
+
+std::vector<Reserva*> ServicoReservas::listarReservasConcluidas() const {
+    std::vector<Reserva*> reservasConcluidas;
+    for (const auto& reserva : reservas) {
+        if (reserva->getStatus() == StatusReserva::Concluida) {
+            reservasConcluidas.push_back(reserva.get());
+        }
+    }
+    return reservasConcluidas;
+}
+
+Reserva* ServicoReservas::buscarPorId(int id) const {
+    for (const auto& reserva : reservas) {
+        if (reserva->getId() == id) {
+            return reserva.get();
+        }
+    }
+    return nullptr;
 }
 
 bool ServicoReservas::pertenceAoServico(const Reserva& reserva) const {

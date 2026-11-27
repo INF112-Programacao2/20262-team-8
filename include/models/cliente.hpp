@@ -13,6 +13,7 @@ class Cliente {
         std::string nome;
         std::string email;
         int faltas;
+        int descontoProximaReserva;
         // Referencias nao proprietarias; ServicoReservas e dono das reservas.
         std::vector<Reserva*> reservas;
     public:
@@ -30,6 +31,9 @@ class Cliente {
         bool estaBloqueado() const;
         void registrarFalta();
         void zerarFaltas();
+        int getDescontoProximaReserva() const;
+        void setDescontoProximaReserva(int percentual);
+        void receberCupom(int percentual);
 };
 
 #endif

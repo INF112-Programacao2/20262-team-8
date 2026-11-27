@@ -2,9 +2,20 @@
 
 #include <stdexcept>
 
-Reserva::Reserva(Cliente* cli, Quadra* q, const std::string& dt, int hrInicio, int horas)
-    : cliente(cli), quadra(q), dataReserva(dt), horarioInicio(hrInicio), valorTotal(0.0),
-      valorReembolso(0.0), duracao(horas), status(StatusReserva::Confirmada) {
+static int gerarIdReserva() {
+    static int id = 0;
+    return ++id;
+}
+
+Reserva::Reserva(Cliente* cli, Quadra* q, const std::string& dt, int hrInicio, int horas,
+                 int descontoPercentual)
+    : id(gerarIdReserva()), cliente(cli), quadra(q), dataReserva(dt),
+      horarioInicio(hrInicio), valorTotal(0.0), valorReembolso(0.0), duracao(horas),
+      descontoPercentual(descontoPercentual), status(StatusReserva::Confirmada),
+      avaliada(false) {
+    if (descontoPercentual < 0 || descontoPercentual > 100) {
+        throw std::invalid_argument("O desconto deve estar entre 0 e 100%.");
+    }
     validarHorarios();
     solicitarCalculoValor();
     if (cliente != nullptr) {
@@ -34,7 +45,8 @@ void Reserva::validarHorarios() {
 
 void Reserva::solicitarCalculoValor() {
     if (quadra != nullptr) {
-        valorTotal = quadra->calcularValorReserva(duracao, horarioInicio);
+        const double valorBase = quadra->calcularValorReserva(duracao, horarioInicio);
+        valorTotal = valorBase * (100 - descontoPercentual) / 100.0;
     } else {
         valorTotal = 0.0;
     }
@@ -124,4 +136,20 @@ int Reserva::getHorarioInicio() const {
 
 bool Reserva::estaAtiva() const {
     return status == StatusReserva::Confirmada;
+}
+
+int Reserva::getId() const {
+    return id;
+}
+
+int Reserva::getDescontoPercentual() const {
+    return descontoPercentual;
+}
+
+bool Reserva::foiAvaliada() const {
+    return avaliada;
+}
+
+void Reserva::marcarAvaliada() {
+    avaliada = true;
 }

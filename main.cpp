@@ -72,10 +72,11 @@ int main() {
                   << "6 - Cancelar reserva\n"
                   << "7 - Concluir reserva\n"
                   << "8 - Registrar falta\n"
+                  << "9 - Avaliar reserva concluida\n"
                   << "0 - Sair\n";
 
         int opcao;
-        if (!lerInteiro("Escolha uma opcao: ", 0, 8, opcao) || opcao == 0) {
+        if (!lerInteiro("Escolha uma opcao: ", 0, 9, opcao) || opcao == 0) {
             break;
         }
 
@@ -270,6 +271,9 @@ int main() {
                           << " | Estrategia: " << quadra->getNomeEstrategiaPreco()
                           << " | Politica: "
                           << quadra->getPoliticaCancelamento()->getNome()
+                          << " | Status: " << (quadra->isAtiva() ? "Ativa" : "Inativa")
+                          << (sistema.quadraEmDestaque(quadra->getId())
+                                  ? " | Em destaque" : "")
                           << " | Modalidades: ";
                 const auto modalidades = quadra->getTipos();
                 for (std::size_t i = 0; i < modalidades.size(); ++i) {
@@ -279,6 +283,46 @@ int main() {
                     std::cout << nomeTipo(modalidades[i]);
                 }
                 std::cout << '\n';
+            }
+        } else if (opcao == 9) {
+            const auto reservas = sistema.listarReservasConcluidas();
+            if (reservas.empty()) {
+                std::cout << "Nao ha reservas concluidas para avaliar.\n";
+                continue;
+            }
+
+            std::cout << "\nReservas concluidas:\n";
+            for (std::size_t i = 0; i < reservas.size(); ++i) {
+                const Reserva* reserva = reservas[i];
+                std::cout << i + 1 << " - Cliente: " << reserva->getCliente()->getNome()
+                          << " | Quadra: " << reserva->getQuadra()->getNome()
+                          << " | Data: " << reserva->getDataReserva()
+                          << " | Valor: R$ " << reserva->getValorTotal() << '\n';
+            }
+
+            int indiceReserva;
+            int nota;
+            std::string comentario;
+            if (!lerInteiro("Numero da reserva: ", 1,
+                            static_cast<int>(reservas.size()), indiceReserva) ||
+                !lerInteiro("Nota (1-5): ", 1, 5, nota) ||
+                !lerTexto("Comentario: ", comentario)) {
+                break;
+            }
+            Reserva* reserva = reservas[indiceReserva - 1];
+            const int avaliacaoId = sistema.avaliarReserva(
+                reserva->getId(), nota, comentario);
+            if (avaliacaoId < 0) {
+                std::cout << "A avaliacao nao pode ser registrada.\n";
+                continue;
+            }
+            std::cout << "Avaliacao registrada. Media da quadra: "
+                      << sistema.mediaDaQuadra(reserva->getQuadra()->getId()) << '\n';
+            if (nota <= 2) {
+                std::cout << "Cliente recebeu cupom de 15% para a proxima reserva.\n";
+                if (!reserva->getQuadra()->isAtiva()) {
+                    std::cout << "A quadra foi desativada para revisao.\n";
+                }
             }
         } else if (opcao >= 5 && opcao <= 8) {
             const auto reservas = sistema.listarReservasAtivas();
