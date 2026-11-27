@@ -1,0 +1,33 @@
+# Exemplo de entrada do modo headless. Um comando por linha, campos separados por ";".
+# Os ids sao gerados na ordem de criacao (1, 2, 3...) para cada tipo de objeto.
+HOJE;2026-12-01
+HORA;10
+
+CLIENTE;Ana Souza;ana@email.com
+CLIENTE;Bruno Lima;bruno@email.com
+CLIENTE;Carla Dias;carla@email.com
+
+QUADRA;Arena Sol;Centro;80;COBERTA;FUTEBOL,HANDEBOL;MODERADA
+QUADRA;Quadra Lua;Bairro Alto;60;ILUMINADA;VOLEI,BASQUETE;FLEXIVEL
+QUADRA;Areia Beach;Orla;50;SIMPLES;BEACHTENNIS;RIGIDA
+
+ESTRATEGIA;2;PICO
+
+RESERVA;1;1;2026-12-05;18;2
+RESERVA;2;1;2026-12-05;19;1
+RESERVA;2;2;2026-12-06;19;2
+RESERVA;3;3;2026-12-07;9
+RESERVA;1;9;2026-12-08;10
+RESERVA;1;1;2026-11-01;10
+
+MANUTENCAO;3;2026-12-10;2026-12-12;Troca da areia
+RESERVA;3;3;2026-12-11;9
+
+CANCELAR;3
+HORA;20
+HOJE;2026-12-05
+CONCLUIR;1
+AVALIAR;1;5;Quadra impecavel
+HOJE;2026-12-07
+FALTA;2
+COMANDO_INVALIDO;1
