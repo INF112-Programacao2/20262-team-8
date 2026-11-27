@@ -16,9 +16,7 @@ public:
         return 0;
     }
     std::string getNome() const override { return "Moderada"; }
-    std::string getDescricao() const override {
-        return "100% com 3 dias ou mais; 50% com 1 ou 2 dias";
-    }
+    std::string getDescricao() const override { return "100% até 3 dias antes"; }
 };
 
 #endif

@@ -13,7 +13,7 @@ public:
         return 0;
     }
     std::string getNome() const override { return "Rígida"; }
-    std::string getDescricao() const override { return "50% com 7 dias ou mais"; }
+    std::string getDescricao() const override { return "50% até 7 dias antes"; }
 };
 
 #endif

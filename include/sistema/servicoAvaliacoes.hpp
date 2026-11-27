@@ -1,33 +1,39 @@
 #ifndef SERVICO_AVALIACOES_HPP
 #define SERVICO_AVALIACOES_HPP
 
-#include "models/avaliacao.hpp"
-
-#include <memory>
 #include <string>
-#include <vector>
+#include "modelos/avaliacao.hpp"
+#include "sistema/mensagens.hpp"
+#include "sistema/servicoReservas.hpp"
+#include "util/colecao.hpp"
 
-class ServicoReservas;
-
+// Avaliacoes das quadras e o que elas causam (cupom, reclamacoes, destaque).
+// E dono dos objetos Avaliacao.
 class ServicoAvaliacoes {
 public:
-    explicit ServicoAvaliacoes(ServicoReservas& reservas);
+    static const int RECLAMACOES_PARA_REVISAO = 3;
+    static const int CUPOM_RECLAMACAO = 15;  // % de desconto para o cliente insatisfeito
+    static const int MIN_AVALIACOES_DESTAQUE = 3;
+    static constexpr double MEDIA_DESTAQUE = 4.5;
 
+    ServicoAvaliacoes(Mensagens& mensagens, ServicoReservas& reservas);
+
+    // Devolve o id da avaliacao, ou -1 se der erro.
     int avaliar(int reservaId, int nota, const std::string& comentario);
-    int quantidade() const;
-    const Avaliacao* obter(int indice) const;
-    double mediaDaQuadra(int quadraId) const;
+    double mediaDaQuadra(int quadraId) const;  // 0 se nao houver avaliacoes
     int contarDaQuadra(int quadraId) const;
     bool quadraEmDestaque(int quadraId) const;
 
-private:
-    static constexpr int cupomReclamacao = 15;
-    static constexpr int reclamacoesParaRevisao = 3;
-    static constexpr int minimoAvaliacoesDestaque = 3;
-    static constexpr double mediaDestaque = 4.5;
+    int quantidade() const;
+    Avaliacao* obter(int indice) const;  // nullptr se a posicao for invalida
 
-    ServicoReservas& reservas;
-    std::vector<std::unique_ptr<Avaliacao>> avaliacoes;
+private:
+    ServicoAvaliacoes(const ServicoAvaliacoes&);
+    ServicoAvaliacoes& operator=(const ServicoAvaliacoes&);
+
+    Mensagens& mensagens_;
+    ServicoReservas& reservas_;
+    Colecao<Avaliacao> avaliacoes_;
 };
 
 #endif

@@ -1,12 +1,25 @@
-#ifndef CONSULTA_MANUTENCAO_HPP
-#define CONSULTA_MANUTENCAO_HPP
+#ifndef MENSAGENS_HPP
+#define MENSAGENS_HPP
 
 #include <string>
 
-class ConsultaManutencao {
+// Guarda a ultima mensagem de erro e o ultimo aviso do sistema.
+// Todos os servicos escrevem aqui, e o SistemaGestao devolve para a interface.
+class Mensagens {
 public:
-    virtual ~ConsultaManutencao() = default;
-    virtual bool quadraBloqueadaNaData(int quadraId, const std::string& data) const = 0;
+    Mensagens();
+
+    void limpar();
+    void erro(const std::string& texto);
+    void aviso(const std::string& texto);
+    void acrescentarAviso(const std::string& texto);
+
+    std::string getErro() const;
+    std::string getAviso() const;
+
+private:
+    std::string erro_;
+    std::string aviso_;
 };
 
 #endif

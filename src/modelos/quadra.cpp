@@ -1,120 +1,198 @@
-#include "models/quadra.hpp"
+#include "modelos/quadra.hpp"
+#include <stdexcept>
 #include "estrategias/estrategiaPadrao.hpp"
+#include "util/geradorId.hpp"
 
-#include <utility>
+// Valores usados no calculo (so existem neste arquivo).
+const double ADICIONAL_NOTURNO_POR_HORA = 10.0;
+const int INICIO_DA_NOITE = 18;
 
-static int gerarId() {
-    static int id = 0;
-    return ++id;
+// Quantas horas da reserva caem a partir das 18h.
+static int horasNoturnas(int horarioInicio, int duracao) {
+    int quantidade = 0;
+    for (int hora = horarioInicio; hora < horarioInicio + duracao; hora++) {
+        if (hora >= INICIO_DA_NOITE) {
+            quantidade++;
+        }
+    }
+    return quantidade;
 }
 
-Quadra::Quadra(const std::string& nome, const std::string& local,
-               const std::vector<TipoQuadra>& tipos, double preco,
-               std::unique_ptr<EstrategiaPreco> estrategiaPreco,
-               std::unique_ptr<PoliticaCancelamento> politicaCancelamento)
-    : id(gerarId()), nome(nome), localizacao(local), tipos(tipos),
-      precoHora(preco), ativa(true), reclamacoes(0),
-      estrategiaPreco(std::move(estrategiaPreco)),
-      politicaCancelamento(std::move(politicaCancelamento)) {
-    if (!this->estrategiaPreco) {
-        this->estrategiaPreco = std::make_unique<EstrategiaPadrao>();
+std::string nomeTipoQuadra(TipoQuadra tipo) {
+    switch (tipo) {
+        case TipoQuadra::Futebol:     return "Futebol";
+        case TipoQuadra::Basquete:    return "Basquete";
+        case TipoQuadra::Volei:       return "Vôlei";
+        case TipoQuadra::Tenis:       return "Tênis";
+        case TipoQuadra::BeachTennis: return "Beach tennis";
+        case TipoQuadra::Padel:       return "Padel";
+        case TipoQuadra::Handebol:    return "Handebol";
     }
-    if (!this->politicaCancelamento) {
-        this->politicaCancelamento = criarPolitica(TipoPolitica::Flexivel);
+    return "Desconhecida";
+}
+
+// ----- Quadra ---------------------------------------------------------------
+Quadra::Quadra(const std::string& nome, const std::string& localizacao, const TipoQuadra tipos[],
+               int qtdTipos, double precoHora, TipoPolitica tipoPolitica,
+               EstrategiaPreco* estrategia) {
+    id_ = proximoId<Quadra>();
+    nome_ = nome;
+    localizacao_ = localizacao;
+    precoHora_ = precoHora;
+    ativa_ = true;
+    reclamacoes_ = 0;
+    politica_ = criarPolitica(tipoPolitica);
+    estrategia_ = estrategia;
+    if (estrategia_ == nullptr) {
+        estrategia_ = new EstrategiaPadrao();
+    }
+    qtdTipos_ = 0;
+    for (int i = 0; i < qtdTipos && i < MAX_TIPOS; i++) {
+        tipos_[i] = tipos[i];
+        qtdTipos_++;
     }
 }
 
-Quadra::~Quadra() = default;
+Quadra::~Quadra() {
+    delete politica_;
+    delete estrategia_;
+}
+
+double Quadra::calcularValorReserva(int duracao) const {
+    return precoHora_ * duracao;
+}
+
+// A estrategia de preco calcula o valor base; as subclasses somam os adicionais.
+double Quadra::calcularValorReserva(int duracao, int horarioInicio) const {
+    return estrategia_->calcularPreco(precoHora_, duracao, horarioInicio);
+}
 
 std::string Quadra::getCategoria() const {
     return "Simples";
 }
 
-double Quadra::calcularValorReserva(int duracao, int horarioInicio) const {
-    return estrategiaPreco->calcularPreco(precoHora, duracao, horarioInicio);
+int Quadra::getId() const {
+    return id_;
 }
 
-double Quadra::calcularValorReserva(int duracao) const {
-    return calcularValorReserva(duracao, 0);
+std::string Quadra::getNome() const {
+    return nome_;
 }
 
-std::string QuadraCoberta::getCategoria() const {
-    return "Coberta";
+std::string Quadra::getLocalizacao() const {
+    return localizacao_;
+}
+
+int Quadra::getQtdTipos() const {
+    return qtdTipos_;
+}
+
+TipoQuadra Quadra::getTipo(int indice) const {
+    if (indice < 0 || indice >= qtdTipos_) {
+        throw std::out_of_range("Quadra::getTipo: indice invalido");
+    }
+    return tipos_[indice];
+}
+
+std::string Quadra::tiposComoTexto() const {
+    std::string texto = "";
+    for (int i = 0; i < qtdTipos_; i++) {
+        if (i > 0) {
+            texto += ", ";
+        }
+        texto += nomeTipoQuadra(tipos_[i]);
+    }
+    return texto;
+}
+
+double Quadra::getPrecoHora() const {
+    return precoHora_;
+}
+
+bool Quadra::isAtiva() const {
+    return ativa_;
+}
+
+void Quadra::setAtiva(bool ativa) {
+    ativa_ = ativa;
+}
+
+void Quadra::setEstrategiaPreco(EstrategiaPreco* novaEstrategia) {
+    // Se for o mesmo objeto que ja esta em uso, nao pode apagar: ele seria usado depois.
+    if (novaEstrategia != nullptr && novaEstrategia != estrategia_) {
+        delete estrategia_;  // libera a anterior antes de trocar
+        estrategia_ = novaEstrategia;
+    }
+}
+
+const EstrategiaPreco* Quadra::getEstrategia() const {
+    return estrategia_;
+}
+
+const PoliticaCancelamento* Quadra::getPolitica() const {
+    return politica_;
+}
+
+int Quadra::getReclamacoes() const {
+    return reclamacoes_;
+}
+
+void Quadra::adicionarReclamacao() {
+    reclamacoes_++;
+}
+
+// ----- Coberta --------------------------------------------------------------
+QuadraCoberta::QuadraCoberta(const std::string& nome, const std::string& localizacao,
+                             const TipoQuadra tipos[], int qtdTipos, double precoHora,
+                             TipoPolitica tipoPolitica, EstrategiaPreco* estrategia)
+    : Quadra(nome, localizacao, tipos, qtdTipos, precoHora, tipoPolitica, estrategia) {}
+
+double QuadraCoberta::calcularValorReserva(int duracao) const {
+    return Quadra::calcularValorReserva(duracao) * 1.15;
 }
 
 double QuadraCoberta::calcularValorReserva(int duracao, int horarioInicio) const {
     return Quadra::calcularValorReserva(duracao, horarioInicio) * 1.15;
 }
 
-std::string QuadraIluminada::getCategoria() const {
-    return "Iluminada";
+std::string QuadraCoberta::getCategoria() const {
+    return "Coberta (+15%)";
+}
+
+// ----- Iluminada ------------------------------------------------------------
+QuadraIluminada::QuadraIluminada(const std::string& nome, const std::string& localizacao,
+                                 const TipoQuadra tipos[], int qtdTipos, double precoHora,
+                                 TipoPolitica tipoPolitica, EstrategiaPreco* estrategia)
+    : Quadra(nome, localizacao, tipos, qtdTipos, precoHora, tipoPolitica, estrategia) {}
+
+double QuadraIluminada::calcularValorReserva(int duracao) const {
+    return Quadra::calcularValorReserva(duracao);
 }
 
 double QuadraIluminada::calcularValorReserva(int duracao, int horarioInicio) const {
-    const double valorBase = Quadra::calcularValorReserva(duracao, horarioInicio);
-    int horasIluminadas = 0;
-    for (int hora = horarioInicio; hora < horarioInicio + duracao; ++hora) {
-        if (hora >= 18) {
-            ++horasIluminadas;
-        }
-    }
-    return valorBase + 10.0 * horasIluminadas;
+    return Quadra::calcularValorReserva(duracao, horarioInicio) +
+           ADICIONAL_NOTURNO_POR_HORA * horasNoturnas(horarioInicio, duracao);
 }
 
-std::string QuadraPremium::getCategoria() const {
-    return "Premium";
+std::string QuadraIluminada::getCategoria() const {
+    return "Iluminada (+R$ 10/h após 18h)";
+}
+
+// ----- Premium --------------------------------------------------------------
+QuadraPremium::QuadraPremium(const std::string& nome, const std::string& localizacao,
+                             const TipoQuadra tipos[], int qtdTipos, double precoHora,
+                             TipoPolitica tipoPolitica, EstrategiaPreco* estrategia)
+    : QuadraCoberta(nome, localizacao, tipos, qtdTipos, precoHora, tipoPolitica, estrategia) {}
+
+double QuadraPremium::calcularValorReserva(int duracao) const {
+    return QuadraCoberta::calcularValorReserva(duracao);
 }
 
 double QuadraPremium::calcularValorReserva(int duracao, int horarioInicio) const {
-    const double valorCoberto = QuadraCoberta::calcularValorReserva(duracao, horarioInicio);
-    int horasIluminadas = 0;
-    for (int hora = horarioInicio; hora < horarioInicio + duracao; ++hora) {
-        if (hora >= 18) {
-            ++horasIluminadas;
-        }
-    }
-    return valorCoberto + 10.0 * horasIluminadas;
-}
-int Quadra::getId() const {
-    return id;
+    return QuadraCoberta::calcularValorReserva(duracao, horarioInicio) +
+           ADICIONAL_NOTURNO_POR_HORA * horasNoturnas(horarioInicio, duracao);
 }
 
-std::string Quadra::getNome() const {
-    return nome;
-}
-
-std::string Quadra::getLocalizacao() const {
-    return localizacao;
-}
-
-std::vector<TipoQuadra> Quadra::getTipos() const {
-    return tipos;
-}
-
-double Quadra::getPrecoHora() const {
-    return precoHora;
-}
-
-bool Quadra::isAtiva() const {
-    return ativa;
-}
-
-void Quadra::setAtiva(bool valor) {
-    ativa = valor;
-}
-
-int Quadra::getReclamacoes() const {
-    return reclamacoes;
-}
-
-void Quadra::adicionarReclamacao() {
-    ++reclamacoes;
-}
-
-std::string Quadra::getNomeEstrategiaPreco() const {
-    return estrategiaPreco->getNome();
-}
-
-const PoliticaCancelamento* Quadra::getPoliticaCancelamento() const {
-    return politicaCancelamento.get();
+std::string QuadraPremium::getCategoria() const {
+    return "Premium (coberta + iluminada)";
 }

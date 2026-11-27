@@ -13,9 +13,7 @@ public:
         return 50;
     }
     std::string getNome() const override { return "Flexível"; }
-    std::string getDescricao() const override {
-        return "100% com 1 dia ou mais; 50% no mesmo dia";
-    }
+    std::string getDescricao() const override { return "100% até 1 dia antes"; }
 };
 
 #endif

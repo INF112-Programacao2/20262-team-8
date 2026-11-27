@@ -1,7 +1,6 @@
 #ifndef ESTRATEGIA_PRECO_HPP
 #define ESTRATEGIA_PRECO_HPP
 
-#include <memory>
 #include <string>
 #include "enums/TipoEstrategia.hpp"
 
@@ -17,6 +16,8 @@ public:
     virtual std::string getDescricao() const = 0;
 };
 
-std::unique_ptr<EstrategiaPreco> criarEstrategia(TipoEstrategia tipo);
+// Cria (com new) a estrategia do tipo pedido. Quem recebe o ponteiro precisa dar delete
+// (a Quadra faz isso sozinha). Definida em src/estrategias/estrategiaPreco.cpp.
+EstrategiaPreco* criarEstrategia(TipoEstrategia tipo);
 
 #endif

@@ -1,267 +1,240 @@
-#include "services/servicoReservas.hpp"
+#include "sistema/servicoReservas.hpp"
+#include "util/data.hpp"
 
-#include <ctime>
-#include <iomanip>
-#include <sstream>
-#include <stdexcept>
-#include <utility>
-
-ServicoReservas::ServicoReservas() {
-    const std::time_t instante = std::time(nullptr);
-    const std::tm* horarioLocal = std::localtime(&instante);
-    if (horarioLocal == nullptr) {
-        throw std::runtime_error("Nao foi possivel obter a data e hora locais.");
-    }
-
-    std::ostringstream dataFormatada;
-    dataFormatada << std::put_time(horarioLocal, "%Y-%m-%d");
-    dataHoje = dataFormatada.str();
-    horaAgora = horarioLocal->tm_hour;
-    consultaManutencao = nullptr;
-}
-
-bool ServicoReservas::definirDataHoje(const std::string& data) {
-    if (!dataValida(data)) {
-        return false;
-    }
-    dataHoje = data;
-    return true;
-}
-
-std::string ServicoReservas::getDataHoje() const {
-    return dataHoje;
-}
-
-bool ServicoReservas::definirHoraAgora(int hora) {
-    if (hora < 0 || hora > 23) {
-        return false;
-    }
-    horaAgora = hora;
-    return true;
-}
-
-int ServicoReservas::getHoraAgora() const {
-    return horaAgora;
-}
+ServicoReservas::ServicoReservas(Mensagens& mensagens, const Relogio& relogio,
+                                 ServicoClientes& clientes, ServicoQuadras& quadras)
+    : mensagens_(mensagens),
+      relogio_(relogio),
+      clientes_(clientes),
+      quadras_(quadras),
+      manutencao_(nullptr) {}
 
 void ServicoReservas::definirConsultaManutencao(const ConsultaManutencao* consulta) {
-    consultaManutencao = consulta;
+    manutencao_ = consulta;
 }
 
-bool ServicoReservas::ehAnoBissexto(int ano) {
-    return ano % 400 == 0 || (ano % 4 == 0 && ano % 100 != 0);
+// Uma reserva so "aconteceu" se o dia dela ja chegou e, sendo hoje, se a hora de inicio
+// ja passou. So nesse caso da para concluir ou registrar falta.
+bool ServicoReservas::jaComecou(const Reserva& reserva) const {
+    if (reserva.getDataReserva() != relogio_.getData()) {
+        return reserva.getDataReserva() < relogio_.getData();
+    }
+    return reserva.getHorarioInicio() <= relogio_.getHora();
 }
 
-bool ServicoReservas::dataValida(const std::string& data) {
-    if (data.size() != 10 || data[4] != '-' || data[7] != '-') {
-        return false;
+std::string ServicoReservas::motivoNaoComecou(const Reserva& reserva) const {
+    if (reserva.getDataReserva() > relogio_.getData()) {
+        return "Essa reserva ainda não aconteceu (hoje é " + relogio_.getData() + ").";
     }
-
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        if (i != 4 && i != 7 && (data[i] < '0' || data[i] > '9')) {
-            return false;
-        }
-    }
-
-    const int ano = std::stoi(data.substr(0, 4));
-    const int mes = std::stoi(data.substr(5, 2));
-    const int dia = std::stoi(data.substr(8, 2));
-
-    if (ano < 1 || mes < 1 || mes > 12) {
-        return false;
-    }
-
-    const int diasPorMes[] = {
-        31, ehAnoBissexto(ano) ? 29 : 28, 31, 30, 31, 30,
-        31, 31, 30, 31, 30, 31
-    };
-    return dia >= 1 && dia <= diasPorMes[mes - 1];
+    return "Essa reserva só começa às " + std::to_string(reserva.getHorarioInicio()) +
+           "h (agora são " + std::to_string(relogio_.getHora()) + "h).";
 }
 
-int ServicoReservas::diaOrdinal(const std::string& data) {
-    const int ano = std::stoi(data.substr(0, 4));
-    const int mes = std::stoi(data.substr(5, 2));
-    const int dia = std::stoi(data.substr(8, 2));
-    const int anoAnterior = ano - 1;
-    int total = anoAnterior * 365 + anoAnterior / 4 - anoAnterior / 100 +
-                anoAnterior / 400;
-    const int diasPorMes[] = {
-        31, ehAnoBissexto(ano) ? 29 : 28, 31, 30, 31, 30,
-        31, 31, 30, 31, 30, 31
-    };
-    for (int indice = 0; indice < mes - 1; ++indice) {
-        total += diasPorMes[indice];
-    }
-    return total + dia;
+int ServicoReservas::criar(int clienteId, int quadraId, const std::string& data,
+                           int horarioInicio) {
+    return criar(clienteId, quadraId, data, horarioInicio, 1);
 }
 
-Reserva* ServicoReservas::criarReserva(Cliente& cliente, Quadra& quadra,
-                                       const std::string& data, int horarioInicio,
-                                       int duracaoHoras) {
-    validarDadosReserva(data, horarioInicio, duracaoHoras);
-    if (data < dataHoje) {
-        throw std::invalid_argument("Nao e possivel criar uma reserva em uma data passada.");
+int ServicoReservas::criar(int clienteId, int quadraId, const std::string& data,
+                           int horarioInicio, int duracao) {
+    mensagens_.limpar();
+    Cliente* cliente = clientes_.achar(clienteId);
+    if (cliente == nullptr) {
+        mensagens_.erro("Selecione um cliente.");
+        return -1;
     }
-    if (cliente.estaBloqueado()) {
-        throw std::runtime_error("Cliente bloqueado por faltas sem aviso.");
+    if (cliente->estaBloqueado()) {
+        mensagens_.erro("Cliente bloqueado por " + std::to_string(Cliente::LIMITE_FALTAS) +
+                        " faltas sem aviso.");
+        return -1;
     }
-    if (!quadra.isAtiva()) {
-        throw std::runtime_error("A quadra esta inativa.");
+    Quadra* quadra = quadras_.achar(quadraId);
+    if (quadra == nullptr) {
+        mensagens_.erro("Selecione uma quadra.");
+        return -1;
     }
-    if (consultaManutencao != nullptr &&
-        consultaManutencao->quadraBloqueadaNaData(quadra.getId(), data)) {
-        throw std::runtime_error("A quadra esta em manutencao nessa data.");
+    if (!Data::valida(data)) {
+        mensagens_.erro("Data inválida. Use o formato AAAA-MM-DD.");
+        return -1;
     }
-    if (!verificarDisponibilidade(quadra, data, horarioInicio, duracaoHoras)) {
-        throw std::runtime_error("A quadra ja possui uma reserva nesse horario.");
+    if (data < relogio_.getData()) {
+        mensagens_.erro("Essa data já passou (hoje é " + relogio_.getData() + ").");
+        return -1;
+    }
+    if (horarioInicio < 0 || horarioInicio > 23) {
+        mensagens_.erro("Horário de início inválido (0 a 23).");
+        return -1;
+    }
+    if (duracao < 1 || horarioInicio + duracao > 24) {
+        mensagens_.erro("Duração inválida para o horário informado.");
+        return -1;
+    }
+    if (!quadra->isAtiva()) {
+        mensagens_.erro("A quadra está inativa.");
+        return -1;
+    }
+    if (manutencao_ != nullptr && manutencao_->quadraBloqueadaNaData(quadraId, data)) {
+        mensagens_.erro("A quadra está em manutenção nessa data.");
+        return -1;
+    }
+    if (!verificarDisponibilidade(*quadra, data, horarioInicio, duracao)) {
+        mensagens_.erro("A quadra já possui uma reserva nesse horário.");
+        return -1;
+    }
+    if (reservas_.tamanho() >= MAX_RESERVAS) {
+        mensagens_.erro("Limite de reservas atingido.");
+        return -1;
     }
 
-    reservas.reserve(reservas.size() + 1);
-    const int desconto = cliente.getDescontoProximaReserva();
-    auto reserva = std::make_unique<Reserva>(&cliente, &quadra, data, horarioInicio,
-                                             duracaoHoras, desconto);
-    Reserva* reservaCriada = reserva.get();
-    reservas.push_back(std::move(reserva));
+    // O cupom do cliente (se tiver) e usado nesta reserva.
+    int desconto = cliente->getDescontoProximaReserva();
+    Reserva* nova = new Reserva(cliente, quadra, data, horarioInicio, duracao, desconto);
+    reservas_.adicionar(nova);
+
     if (desconto > 0) {
-        cliente.setDescontoProximaReserva(0);
+        cliente->setDescontoProximaReserva(0);
+        mensagens_.aviso("Cupom de " + std::to_string(desconto) + "% aplicado.");
     }
-    return reservaCriada;
+    return nova->getId();
 }
 
-bool ServicoReservas::cancelarReserva(Reserva& reserva) {
-    if (!pertenceAoServico(reserva) || !reserva.estaAtiva() ||
-        reserva.getDataReserva() < dataHoje) {
-        return false;
+Reserva* ServicoReservas::criar(Cliente& cliente, Quadra& quadra, const std::string& data,
+                                int horarioInicio, int duracaoHoras) {
+    if (clientes_.achar(cliente.getId()) != &cliente ||
+        quadras_.achar(quadra.getId()) != &quadra) {
+        mensagens_.limpar();
+        mensagens_.erro("Cliente ou quadra não cadastrados neste sistema.");
+        return nullptr;
     }
-
-    const PoliticaCancelamento* politica = reserva.getQuadra()->getPoliticaCancelamento();
-    if (politica == nullptr) {
-        throw std::logic_error("A quadra nao possui politica de cancelamento.");
+    int id = criar(cliente.getId(), quadra.getId(), data, horarioInicio, duracaoHoras);
+    if (id == -1) {
+        return nullptr;
     }
-    const int diasAntes = diaOrdinal(reserva.getDataReserva()) - diaOrdinal(dataHoje);
-    const int percentual = politica->percentualReembolso(diasAntes);
-    const double reembolso = reserva.getValorTotal() * percentual / 100.0;
-    return reserva.cancelarReserva(reembolso);
+    return achar(id);
 }
 
-bool ServicoReservas::concluirReserva(Reserva& reserva) {
-    if (!pertenceAoServico(reserva) || !reserva.estaAtiva() || !jaComecou(reserva)) {
-        return false;
+double ServicoReservas::cancelar(int reservaId) {
+    mensagens_.limpar();
+    Reserva* reserva = achar(reservaId);
+    if (reserva == nullptr) {
+        mensagens_.erro("Selecione uma reserva.");
+        return -1;
     }
-    return reserva.concluir();
+    if (!reserva->estaAtiva()) {
+        mensagens_.erro("Só é possível cancelar reservas confirmadas.");
+        return -1;
+    }
+    if (reserva->getDataReserva() < relogio_.getData()) {
+        mensagens_.erro("Essa reserva já passou: conclua ou registre a falta.");
+        return -1;
+    }
+
+    // A politica da quadra decide quantos % sao devolvidos (polimorfismo).
+    int dias = Data::diferencaEmDias(relogio_.getData(), reserva->getDataReserva());
+    const PoliticaCancelamento* politica = reserva->getQuadra()->getPolitica();
+    int percentual = politica->percentualReembolso(dias);
+    double reembolso = reserva->getValorTotal() * percentual / 100.0;
+
+    reserva->cancelarReserva(reembolso);
+    mensagens_.aviso("Política " + politica->getNome() + ": " + std::to_string(percentual) +
+                     "% de reembolso (faltam " + std::to_string(dias) + " dia(s)).");
+    return reembolso;
 }
 
-bool ServicoReservas::registrarFalta(Reserva& reserva) {
-    if (!pertenceAoServico(reserva) || !reserva.estaAtiva() || !jaComecou(reserva)) {
+bool ServicoReservas::cancelar(Reserva& reserva) {
+    if (achar(reserva.getId()) != &reserva) {
+        mensagens_.limpar();
+        mensagens_.erro("Reserva não cadastrada neste sistema.");
         return false;
     }
-    if (!reserva.registrarFalta()) {
+    return cancelar(reserva.getId()) >= 0;
+}
+
+bool ServicoReservas::concluir(int reservaId) {
+    mensagens_.limpar();
+    Reserva* reserva = achar(reservaId);
+    if (reserva == nullptr) {
+        mensagens_.erro("Selecione uma reserva.");
         return false;
     }
-    reserva.getCliente()->registrarFalta();
+    if (!reserva->estaAtiva()) {
+        mensagens_.erro("Só é possível concluir reservas confirmadas.");
+        return false;
+    }
+    if (!jaComecou(*reserva)) {
+        mensagens_.erro(motivoNaoComecou(*reserva));
+        return false;
+    }
+    reserva->concluir();
+    mensagens_.aviso("O cliente já pode avaliar a quadra.");
     return true;
 }
 
-std::vector<Reserva*> ServicoReservas::listarReservasAtivas() const {
-    std::vector<Reserva*> reservasAtivas;
-    for (const auto& reserva : reservas) {
-        if (reserva->estaAtiva()) {
-            reservasAtivas.push_back(reserva.get());
-        }
+bool ServicoReservas::registrarFalta(int reservaId) {
+    mensagens_.limpar();
+    Reserva* reserva = achar(reservaId);
+    if (reserva == nullptr) {
+        mensagens_.erro("Selecione uma reserva.");
+        return false;
     }
-    return reservasAtivas;
-}
+    if (!reserva->estaAtiva()) {
+        mensagens_.erro("Só é possível registrar falta em reservas confirmadas.");
+        return false;
+    }
+    if (!jaComecou(*reserva)) {
+        mensagens_.erro(motivoNaoComecou(*reserva));
+        return false;
+    }
 
-std::vector<Reserva*> ServicoReservas::listarReservasConcluidas() const {
-    std::vector<Reserva*> reservasConcluidas;
-    for (const auto& reserva : reservas) {
-        if (reserva->getStatus() == StatusReserva::Concluida) {
-            reservasConcluidas.push_back(reserva.get());
-        }
+    // A falta afeta a reserva E o cliente.
+    reserva->registrarFalta();
+    Cliente* cliente = reserva->getCliente();
+    cliente->registrarFalta();
+    mensagens_.aviso(cliente->getNome() + " tem " + std::to_string(cliente->getFaltas()) +
+                     " falta(s) sem aviso.");
+    if (cliente->estaBloqueado()) {
+        mensagens_.acrescentarAviso(" Cliente bloqueado!");
     }
-    return reservasConcluidas;
-}
-
-Reserva* ServicoReservas::buscarPorId(int id) const {
-    for (const auto& reserva : reservas) {
-        if (reserva->getId() == id) {
-            return reserva.get();
-        }
-    }
-    return nullptr;
+    return true;
 }
 
 int ServicoReservas::cancelarNoPeriodo(int quadraId, const std::string& dataInicio,
-                                       const std::string& dataFim,
-                                       int cupomPercentual) {
-    if (!dataValida(dataInicio) || !dataValida(dataFim) || dataFim < dataInicio) {
-        throw std::invalid_argument("Periodo de manutencao invalido.");
-    }
-    if (cupomPercentual < 0 || cupomPercentual > 100) {
-        throw std::invalid_argument("O cupom deve estar entre 0 e 100%.");
-    }
-
+                                       const std::string& dataFim, int cupomPercentual) {
     int canceladas = 0;
-    for (const auto& reserva : reservas) {
-        if (reserva->estaAtiva() && reserva->getQuadra()->getId() == quadraId &&
-            reserva->getDataReserva() >= dataInicio &&
-            reserva->getDataReserva() <= dataFim &&
-            reserva->cancelarReserva(reserva->getValorTotal())) {
-            reserva->getCliente()->receberCupom(cupomPercentual);
-            ++canceladas;
+    for (int i = 0; i < reservas_.tamanho(); i++) {
+        Reserva* r = reservas_.obter(i);
+        if (r->estaAtiva() && r->getQuadra()->getId() == quadraId &&
+            r->getDataReserva() >= dataInicio && r->getDataReserva() <= dataFim) {
+            r->cancelarReserva(r->getValorTotal());
+            r->getCliente()->receberCupom(cupomPercentual);
+            canceladas++;
         }
     }
     return canceladas;
 }
 
-bool ServicoReservas::pertenceAoServico(const Reserva& reserva) const {
-    for (const auto& reservaGerenciada : reservas) {
-        if (reservaGerenciada.get() == &reserva) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool ServicoReservas::jaComecou(const Reserva& reserva) const {
-    return reserva.getDataReserva() < dataHoje ||
-           (reserva.getDataReserva() == dataHoje &&
-            reserva.getHorarioInicio() <= horaAgora);
-}
-
-bool ServicoReservas::verificarDisponibilidade(const Quadra& quadra,
-                                                const std::string& data,
-                                                int horarioInicio,
-                                                int duracaoHoras) const {
-    validarDadosReserva(data, horarioInicio, duracaoHoras);
-    if (consultaManutencao != nullptr &&
-        consultaManutencao->quadraBloqueadaNaData(quadra.getId(), data)) {
+bool ServicoReservas::verificarDisponibilidade(const Quadra& quadra, const std::string& data,
+                                               int horarioInicio, int duracaoHoras) const {
+    if (!Data::valida(data) || horarioInicio < 0 || horarioInicio > 23 || duracaoHoras < 1 ||
+        horarioInicio + duracaoHoras > 24) {
         return false;
     }
-
-    const int fimNovoHorario = horarioInicio + duracaoHoras;
-    for (const auto& reserva : reservas) {
-        if (reserva->estaAtiva() &&
-            reserva->getQuadra() == &quadra &&
-            reserva->getDataReserva() == data &&
-            horarioInicio < reserva->getHorarioInicio() + reserva->getDuracaoHoras() &&
-            reserva->getHorarioInicio() < fimNovoHorario) {
+    for (int i = 0; i < reservas_.tamanho(); i++) {
+        if (reservas_.obter(i)->conflitaCom(quadra.getId(), data, horarioInicio, duracaoHoras)) {
             return false;
         }
     }
     return true;
 }
 
-void ServicoReservas::validarDadosReserva(const std::string& data, int horarioInicio,
-                                          int duracaoHoras) const {
-    if (!dataValida(data)) {
-        throw std::invalid_argument("Data invalida. Use o formato AAAA-MM-DD.");
-    }
-    if (horarioInicio < 0 || horarioInicio > 23) {
-        throw std::invalid_argument("Horario de inicio invalido.");
-    }
-    if (duracaoHoras <= 0 || duracaoHoras > 24 ||
-        horarioInicio + duracaoHoras > 24) {
-        throw std::invalid_argument("Duracao invalida para o horario informado.");
-    }
+Reserva* ServicoReservas::achar(int id) const {
+    return reservas_.buscarPorId(id);
+}
+
+int ServicoReservas::quantidade() const {
+    return reservas_.tamanho();
+}
+
+Reserva* ServicoReservas::obter(int indice) const {
+    return reservas_.obter(indice);
 }

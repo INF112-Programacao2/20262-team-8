@@ -1,78 +1,120 @@
 #ifndef QUADRA_HPP
 #define QUADRA_HPP
 
-#include "../enums/TipoQuadra.hpp"
-#include "estrategias/estrategiaPreco.hpp"
-#include "politicas/politicaCancelamento.hpp"
-
-#include <memory>
 #include <string>
-#include <vector>
+#include "enums/TipoQuadra.hpp"
+#include "enums/TipoPolitica.hpp"
+#include "politicas/politicaCancelamento.hpp"
+#include "estrategias/estrategiaPreco.hpp"
 
-// Classe base. Uma quadra "simples" cobra apenas preco por hora.
+std::string nomeTipoQuadra(TipoQuadra tipo);
+
+// ---------------------------------------------------------------------------
+// Quadra (base): categoria "Simples", sem acrescimos.
+//
+// Existem duas formas de calcular o preco:
+//  - as subclasses (Coberta, Iluminada, Premium) somam os seus adicionais;
+//  - a EstrategiaPreco (Padrao, Mensalista, Pico) calcula o valor base.
+// A estrategia padrao nao altera nada (preco/hora x duracao).
+// ---------------------------------------------------------------------------
 class Quadra {
-protected:
-    int id;
-    std::string nome;
-    std::string localizacao;
-    std::vector<TipoQuadra> tipos;
-    double precoHora;
-    bool ativa;
-    int reclamacoes;
-    std::unique_ptr<EstrategiaPreco> estrategiaPreco;
-    std::unique_ptr<PoliticaCancelamento> politicaCancelamento;
 public:
-    Quadra(const std::string& nome, const std::string& localizacao,
-           const std::vector<TipoQuadra>& tipos, double precoHora,
-           std::unique_ptr<EstrategiaPreco> estrategiaPreco = nullptr,
-           std::unique_ptr<PoliticaCancelamento> politicaCancelamento = nullptr);
-    virtual ~Quadra();
+    static const int MAX_TIPOS = 7;
+
+    // O id e gerado automaticamente. Se nao passar estrategia, usa a Padrao.
+    // A quadra passa a ser dona da estrategia (ela da o delete).
+    Quadra(const std::string& nome, const std::string& localizacao, const TipoQuadra tipos[],
+           int qtdTipos, double precoHora, TipoPolitica tipoPolitica = TipoPolitica::Flexivel,
+           EstrategiaPreco* estrategia = nullptr);
+    virtual ~Quadra();  // obrigatorio quando ha heranca
+
+    // Sobrecarga: sem horario (nao sabe se ha iluminacao noturna) e com horario.
+    // A versao sem horario e so uma estimativa de dia: usa o preco/hora (e o adicional
+    // da categoria), sem estrategia e sem adicional noturno. O sistema usa a com horario.
+    virtual double calcularValorReserva(int duracao) const;
+    virtual double calcularValorReserva(int duracao, int horarioInicio) const;
+    virtual std::string getCategoria() const;
 
     int getId() const;
     std::string getNome() const;
     std::string getLocalizacao() const;
-    std::vector<TipoQuadra> getTipos() const;
+    int getQtdTipos() const;
+    TipoQuadra getTipo(int indice) const;  // lanca std::out_of_range se o indice for invalido
+    std::string tiposComoTexto() const;
     double getPrecoHora() const;
     bool isAtiva() const;
     void setAtiva(bool ativa);
+
+    // Estrategia de preco (troca a anterior e libera a memoria dela).
+    // nullptr, ou a mesma estrategia que ja esta em uso, nao muda nada.
+    void setEstrategiaPreco(EstrategiaPreco* novaEstrategia);
+    const EstrategiaPreco* getEstrategia() const;
+
+    // Politica de cancelamento (cada quadra tem a sua)
+    const PoliticaCancelamento* getPolitica() const;
+
+    // Reclamacoes recebidas (avaliacoes com nota 1 ou 2)
     int getReclamacoes() const;
     void adicionarReclamacao();
-    std::string getNomeEstrategiaPreco() const;
-    const PoliticaCancelamento* getPoliticaCancelamento() const;
 
-    // cada tipo de quadra calcula do seu jeito.
-    virtual std::string getCategoria() const;
-    virtual double calcularValorReserva(int duracao, int horarioInicio) const;
+private:
+    // A quadra e dona da politica e da estrategia (criadas com new),
+    // por isso nao pode ser copiada.
+    Quadra(const Quadra&);
+    Quadra& operator=(const Quadra&);
 
-    // SOBRECARGA: versao simples, sem considerar o horario.
-    double calcularValorReserva(int duracao) const;
+    int id_;
+    std::string nome_;
+    std::string localizacao_;
+    TipoQuadra tipos_[MAX_TIPOS];
+    int qtdTipos_;
+    double precoHora_;
+    bool ativa_;
+    PoliticaCancelamento* politica_;
+    EstrategiaPreco* estrategia_;
+    int reclamacoes_;
 };
 
-// Quadra coberta: adicional de 15% sobre o valor total.
+// ---------------------------------------------------------------------------
+// Coberta: +15% no valor.
+// ---------------------------------------------------------------------------
 class QuadraCoberta : public Quadra {
 public:
-    using Quadra::Quadra;                     // reaproveita o construtor da base
-    using Quadra::calcularValorReserva;       // mantem a sobrecarga visivel
-    std::string getCategoria() const override;
+    QuadraCoberta(const std::string& nome, const std::string& localizacao,
+                  const TipoQuadra tipos[], int qtdTipos, double precoHora,
+                  TipoPolitica tipoPolitica = TipoPolitica::Flexivel,
+                  EstrategiaPreco* estrategia = nullptr);
+    double calcularValorReserva(int duracao) const override;
     double calcularValorReserva(int duracao, int horarioInicio) const override;
+    std::string getCategoria() const override;
 };
 
-// Quadra iluminada: R$ 10 a mais por hora jogada a partir das 18h.
+// ---------------------------------------------------------------------------
+// Iluminada: +R$ 10 por hora para as horas a partir das 18h.
+// ---------------------------------------------------------------------------
 class QuadraIluminada : public Quadra {
 public:
-    using Quadra::Quadra;
-    using Quadra::calcularValorReserva;
-    std::string getCategoria() const override;
+    QuadraIluminada(const std::string& nome, const std::string& localizacao,
+                    const TipoQuadra tipos[], int qtdTipos, double precoHora,
+                    TipoPolitica tipoPolitica = TipoPolitica::Flexivel,
+                    EstrategiaPreco* estrategia = nullptr);
+    double calcularValorReserva(int duracao) const override;
     double calcularValorReserva(int duracao, int horarioInicio) const override;
+    std::string getCategoria() const override;
 };
 
-// Quadra premium: coberta + iluminada (heranca em cadeia).
+// ---------------------------------------------------------------------------
+// Premium: coberta (+15%) + iluminada (+R$ 10/h apos 18h).
+// ---------------------------------------------------------------------------
 class QuadraPremium : public QuadraCoberta {
 public:
-    using QuadraCoberta::QuadraCoberta;
-    using QuadraCoberta::calcularValorReserva;
-    std::string getCategoria() const override;
+    QuadraPremium(const std::string& nome, const std::string& localizacao,
+                  const TipoQuadra tipos[], int qtdTipos, double precoHora,
+                  TipoPolitica tipoPolitica = TipoPolitica::Flexivel,
+                  EstrategiaPreco* estrategia = nullptr);
+    double calcularValorReserva(int duracao) const override;
     double calcularValorReserva(int duracao, int horarioInicio) const override;
+    std::string getCategoria() const override;
 };
 
 #endif

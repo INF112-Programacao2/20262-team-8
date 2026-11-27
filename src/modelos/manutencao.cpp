@@ -1,43 +1,44 @@
-#include "models/manutencao.hpp"
+#include "modelos/manutencao.hpp"
+#include "util/geradorId.hpp"
 
-static int gerarIdManutencao() {
-    static int id = 0;
-    return ++id;
+Manutencao::Manutencao(int quadraId, const std::string& dataInicio, const std::string& dataFim,
+                       const std::string& motivo) {
+    id_ = proximoId<Manutencao>();
+    quadraId_ = quadraId;
+    dataInicio_ = dataInicio;
+    dataFim_ = dataFim;
+    motivo_ = motivo;
+    aberta_ = true;
 }
 
-Manutencao::Manutencao(int quadraId, const std::string& dataInicio,
-                       const std::string& dataFim, const std::string& motivo)
-    : id(gerarIdManutencao()), quadraId(quadraId), dataInicio(dataInicio),
-      dataFim(dataFim), motivo(motivo), aberta(true) {}
-
 int Manutencao::getId() const {
-    return id;
+    return id_;
 }
 
 int Manutencao::getQuadraId() const {
-    return quadraId;
+    return quadraId_;
 }
 
 std::string Manutencao::getDataInicio() const {
-    return dataInicio;
+    return dataInicio_;
 }
 
 std::string Manutencao::getDataFim() const {
-    return dataFim;
+    return dataFim_;
 }
 
 std::string Manutencao::getMotivo() const {
-    return motivo;
+    return motivo_;
 }
 
 bool Manutencao::estaAberta() const {
-    return aberta;
+    return aberta_;
 }
 
 void Manutencao::encerrar() {
-    aberta = false;
+    aberta_ = false;
 }
 
 bool Manutencao::cobreData(const std::string& data) const {
-    return aberta && data >= dataInicio && data <= dataFim;
+    return aberta_ && data >= dataInicio_ && data <= dataFim_;
 }

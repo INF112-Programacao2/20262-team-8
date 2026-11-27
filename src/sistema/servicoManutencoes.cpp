@@ -1,62 +1,77 @@
-#include "services/servicoManutencoes.hpp"
+#include "sistema/servicoManutencoes.hpp"
+#include "util/data.hpp"
 
-#include "services/servicoQuadras.hpp"
-#include "services/servicoReservas.hpp"
-
-#include <stdexcept>
-#include <utility>
-
-ServicoManutencoes::ServicoManutencoes(ServicoQuadras& quadras,
-                                       ServicoReservas& reservas)
-    : quadras(quadras), reservas(reservas) {}
+ServicoManutencoes::ServicoManutencoes(Mensagens& mensagens, const Relogio& relogio,
+                                       ServicoQuadras& quadras, ServicoReservas& reservas)
+    : mensagens_(mensagens), relogio_(relogio), quadras_(quadras), reservas_(reservas) {}
 
 int ServicoManutencoes::registrar(int quadraId, const std::string& dataInicio,
                                   const std::string& dataFim, const std::string& motivo) {
-    if (quadras.buscarPorId(quadraId) == nullptr) {
+    mensagens_.limpar();
+    if (quadras_.achar(quadraId) == nullptr) {
+        mensagens_.erro("Selecione uma quadra.");
         return -1;
     }
-    if (!ServicoReservas::dataValida(dataInicio) ||
-        !ServicoReservas::dataValida(dataFim) || dataFim < dataInicio ||
-        motivo.find_first_not_of(" \t\r\n") == std::string::npos) {
+    if (!Data::valida(dataInicio) || !Data::valida(dataFim)) {
+        mensagens_.erro("Datas inválidas. Use o formato AAAA-MM-DD.");
+        return -1;
+    }
+    if (dataFim < dataInicio) {
+        mensagens_.erro("A data final não pode ser antes da data inicial.");
+        return -1;
+    }
+    if (motivo.empty()) {
+        mensagens_.erro("Informe o motivo da manutenção.");
         return -1;
     }
 
-    manutencoes.reserve(manutencoes.size() + 1);
-    auto manutencao = std::make_unique<Manutencao>(
-        quadraId, dataInicio, dataFim, motivo);
-    const int id = manutencao->getId();
-    manutencoes.push_back(std::move(manutencao));
+    Manutencao* nova = new Manutencao(quadraId, dataInicio, dataFim, motivo);
+    manutencoes_.adicionar(nova);
 
-    reservas.cancelarNoPeriodo(
-        quadraId, dataInicio, dataFim, cupomCancelamento);
-    return id;
+    // A quadra quebrada afeta as reservas ja marcadas nesse periodo:
+    // elas sao canceladas com reembolso total e o cliente ganha um cupom.
+    int canceladas = reservas_.cancelarNoPeriodo(quadraId, dataInicio, dataFim, CUPOM_CANCELAMENTO);
+
+    if (canceladas > 0) {
+        mensagens_.aviso(std::to_string(canceladas) +
+                         " reserva(s) cancelada(s) com reembolso total; os clientes ganharam cupom de " +
+                         std::to_string(CUPOM_CANCELAMENTO) + "%.");
+    } else {
+        mensagens_.aviso("Nenhuma reserva foi afetada.");
+    }
+    return nova->getId();
 }
 
 bool ServicoManutencoes::encerrar(int manutencaoId) {
-    for (const auto& manutencao : manutencoes) {
-        if (manutencao->getId() == manutencaoId && manutencao->estaAberta()) {
-            manutencao->encerrar();
-            return true;
-        }
+    mensagens_.limpar();
+    Manutencao* manutencao = manutencoes_.buscarPorId(manutencaoId);
+    if (manutencao == nullptr) {
+        mensagens_.erro("Selecione uma manutenção.");
+        return false;
     }
-    return false;
+    if (!manutencao->estaAberta()) {
+        mensagens_.erro("Essa manutenção já está encerrada.");
+        return false;
+    }
+    manutencao->encerrar();
+    return true;
 }
 
 bool ServicoManutencoes::quadraEmManutencao(int quadraId) const {
-    const std::string dataHoje = reservas.getDataHoje();
-    for (const auto& manutencao : manutencoes) {
-        if (manutencao->getQuadraId() == quadraId && manutencao->estaAberta() &&
-            manutencao->getDataFim() >= dataHoje) {
+    for (int i = 0; i < manutencoes_.tamanho(); i++) {
+        Manutencao* m = manutencoes_.obter(i);
+        if (m->getQuadraId() == quadraId && m->estaAberta() &&
+            m->getDataFim() >= relogio_.getData()) {
             return true;
         }
     }
     return false;
 }
 
-bool ServicoManutencoes::quadraBloqueadaNaData(int quadraId,
-                                               const std::string& data) const {
-    for (const auto& manutencao : manutencoes) {
-        if (manutencao->getQuadraId() == quadraId && manutencao->cobreData(data)) {
+bool ServicoManutencoes::quadraBloqueadaNaData(int quadraId, const std::string& data) const {
+    for (int i = 0; i < manutencoes_.tamanho(); i++) {
+        Manutencao* m = manutencoes_.obter(i);
+        if (m->getQuadraId() == quadraId && m->cobreData(data)) {
             return true;
         }
     }
@@ -64,12 +79,9 @@ bool ServicoManutencoes::quadraBloqueadaNaData(int quadraId,
 }
 
 int ServicoManutencoes::quantidade() const {
-    return static_cast<int>(manutencoes.size());
+    return manutencoes_.tamanho();
 }
 
-const Manutencao* ServicoManutencoes::obter(int indice) const {
-    if (indice < 0 || indice >= quantidade()) {
-        return nullptr;
-    }
-    return manutencoes[static_cast<std::size_t>(indice)].get();
+Manutencao* ServicoManutencoes::obter(int indice) const {
+    return manutencoes_.obter(indice);
 }

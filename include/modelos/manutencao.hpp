@@ -3,10 +3,13 @@
 
 #include <string>
 
+// Periodo em que uma quadra esta interditada (piso quebrado, rede rasgada etc.).
+// Enquanto estiver aberta, a quadra nao aceita reservas nas datas cobertas.
 class Manutencao {
 public:
-    Manutencao(int quadraId, const std::string& dataInicio,
-               const std::string& dataFim, const std::string& motivo);
+    // O id e gerado automaticamente.
+    Manutencao(int quadraId, const std::string& dataInicio, const std::string& dataFim,
+               const std::string& motivo);
 
     int getId() const;
     int getQuadraId() const;
@@ -15,15 +18,17 @@ public:
     std::string getMotivo() const;
     bool estaAberta() const;
     void encerrar();
+
+    // As datas no formato AAAA-MM-DD podem ser comparadas como texto.
     bool cobreData(const std::string& data) const;
 
 private:
-    int id;
-    int quadraId;
-    std::string dataInicio;
-    std::string dataFim;
-    std::string motivo;
-    bool aberta;
+    int id_;
+    int quadraId_;
+    std::string dataInicio_;
+    std::string dataFim_;
+    std::string motivo_;
+    bool aberta_;
 };
 
 #endif

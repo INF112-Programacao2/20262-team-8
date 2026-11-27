@@ -2,38 +2,48 @@
 #define CLIENTE_HPP
 
 #include <string>
-#include <vector>
 
 class Reserva;
 
 class Cliente {
-    private:
-        static const int limiteFaltas = 3;
-        int id;
-        std::string nome;
-        std::string email;
-        int faltas;
-        int descontoProximaReserva;
-        // Referencias nao proprietarias; ServicoReservas e dono das reservas.
-        std::vector<Reserva*> reservas;
-    public:
-        Cliente(const std::string& nome, const std::string& email);
-        ~Cliente() = default;
+public:
+    // Com este numero de faltas sem aviso o cliente fica bloqueado.
+    static const int LIMITE_FALTAS = 3;
+    static const int MAX_RESERVAS = 500;
 
-        int getId() const;
-        std::string getNome() const;
-        std::string getEmail() const;
-        std::vector<Reserva*> getReservas() const;
-        
-        void adicionarReserva(Reserva* reserva);
-        void removerReserva(const Reserva* reserva);
-        int getFaltas() const;
-        bool estaBloqueado() const;
-        void registrarFalta();
-        void zerarFaltas();
-        int getDescontoProximaReserva() const;
-        void setDescontoProximaReserva(int percentual);
-        void receberCupom(int percentual);
+    // O id e gerado automaticamente.
+    Cliente(const std::string& nome, const std::string& email);
+
+    int getId() const;
+    std::string getNome() const;
+    std::string getEmail() const;
+
+    // Reservas do cliente (so guarda referencias: quem libera a memoria
+    // das reservas e o SistemaGestao).
+    int getQtdReservas() const;
+    Reserva* getReserva(int indice) const;  // nullptr se o indice for invalido
+    void adicionarReserva(Reserva* reserva);
+
+    // Faltas sem aviso
+    int getFaltas() const;
+    void registrarFalta();
+    void zerarFaltas();
+    bool estaBloqueado() const;
+
+    // Cupom de desconto (em %) que vale para a proxima reserva.
+    int getDescontoProximaReserva() const;
+    void setDescontoProximaReserva(int percentual);
+    // So troca o cupom se o novo for maior que o que o cliente ja tem.
+    void receberCupom(int percentual);
+
+private:
+    int id_;
+    std::string nome_;
+    std::string email_;
+    Reserva* reservas_[MAX_RESERVAS];
+    int qtdReservas_;
+    int faltas_;
+    int desconto_;
 };
 
 #endif
