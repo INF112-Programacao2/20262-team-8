@@ -1,6 +1,7 @@
 #ifndef POLITICA_CANCELAMENTO_HPP
 #define POLITICA_CANCELAMENTO_HPP
 
+#include <memory>
 #include <string>
 #include "enums/TipoPolitica.hpp"
 
@@ -17,8 +18,6 @@ public:
     virtual std::string getDescricao() const = 0;
 };
 
-// Cria (com new) a politica do tipo pedido. Quem recebe o ponteiro precisa dar delete.
-// (definida em src/politicas/politicaCancelamento.cpp)
-PoliticaCancelamento* criarPolitica(TipoPolitica tipo);
+std::unique_ptr<PoliticaCancelamento> criarPolitica(TipoPolitica tipo);
 
 #endif

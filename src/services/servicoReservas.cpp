@@ -73,6 +73,23 @@ bool ServicoReservas::dataValida(const std::string& data) {
     return dia >= 1 && dia <= diasPorMes[mes - 1];
 }
 
+int ServicoReservas::diaOrdinal(const std::string& data) {
+    const int ano = std::stoi(data.substr(0, 4));
+    const int mes = std::stoi(data.substr(5, 2));
+    const int dia = std::stoi(data.substr(8, 2));
+    const int anoAnterior = ano - 1;
+    int total = anoAnterior * 365 + anoAnterior / 4 - anoAnterior / 100 +
+                anoAnterior / 400;
+    const int diasPorMes[] = {
+        31, ehAnoBissexto(ano) ? 29 : 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31
+    };
+    for (int indice = 0; indice < mes - 1; ++indice) {
+        total += diasPorMes[indice];
+    }
+    return total + dia;
+}
+
 Reserva* ServicoReservas::criarReserva(Cliente& cliente, Quadra& quadra,
                                        const std::string& data, int horarioInicio,
                                        int duracaoHoras) {
@@ -96,13 +113,19 @@ Reserva* ServicoReservas::criarReserva(Cliente& cliente, Quadra& quadra,
 }
 
 bool ServicoReservas::cancelarReserva(Reserva& reserva) {
-    for (const auto& reservaGerenciada : reservas) {
-        if (reservaGerenciada.get() == &reserva) {
-            return reserva.estaAtiva() && reserva.getDataReserva() >= dataHoje &&
-                   reserva.cancelarReserva();
-        }
+    if (!pertenceAoServico(reserva) || !reserva.estaAtiva() ||
+        reserva.getDataReserva() < dataHoje) {
+        return false;
     }
-    return false;
+
+    const PoliticaCancelamento* politica = reserva.getQuadra()->getPoliticaCancelamento();
+    if (politica == nullptr) {
+        throw std::logic_error("A quadra nao possui politica de cancelamento.");
+    }
+    const int diasAntes = diaOrdinal(reserva.getDataReserva()) - diaOrdinal(dataHoje);
+    const int percentual = politica->percentualReembolso(diasAntes);
+    const double reembolso = reserva.getValorTotal() * percentual / 100.0;
+    return reserva.cancelarReserva(reembolso);
 }
 
 bool ServicoReservas::concluirReserva(Reserva& reserva) {

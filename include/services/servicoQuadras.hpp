@@ -3,6 +3,7 @@
 
 #include "enums/Categoria.hpp"
 #include "enums/TipoEstrategia.hpp"
+#include "enums/TipoPolitica.hpp"
 #include "models/quadra.hpp"
 
 #include <memory>
@@ -14,7 +15,8 @@ public:
     int cadastrar(const std::string& nome, const std::string& localizacao,
                   const std::vector<TipoQuadra>& tipos, double precoHora,
                   TipoEstrategia estrategia = TipoEstrategia::Padrao,
-                  Categoria categoria = Categoria::Simples);
+                  Categoria categoria = Categoria::Simples,
+                  TipoPolitica politica = TipoPolitica::Flexivel);
     int quantidade() const;
     Quadra* obter(int indice) const;
 

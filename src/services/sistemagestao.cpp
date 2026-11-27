@@ -30,9 +30,10 @@ Cliente* SistemaGestao::getCliente(int indice) const {
 
 int SistemaGestao::cadastrarQuadra(const std::string& nome, const std::string& localizacao,
                                    const std::vector<TipoQuadra>& tipos, double precoHora,
-                                   TipoEstrategia estrategia, Categoria categoria) {
+                                   TipoEstrategia estrategia, Categoria categoria,
+                                   TipoPolitica politica) {
     return servicoQuadras.cadastrar(
-        nome, localizacao, tipos, precoHora, estrategia, categoria);
+        nome, localizacao, tipos, precoHora, estrategia, categoria, politica);
 }
 
 int SistemaGestao::getQtdQuadras() const {

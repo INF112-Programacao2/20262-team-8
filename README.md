@@ -21,6 +21,12 @@ As quadras podem ser simples, cobertas (+15%), iluminadas (+R$ 10 por hora a par
 das 18h) ou premium (combina os dois adicionais). Esses adicionais são aplicados
 ao valor calculado pela estratégia de preço selecionada.
 
+Cada quadra também tem uma política de cancelamento: **Flexível** devolve 100% a
+partir de um dia antes e 50% no mesmo dia; **Moderada** devolve 100% a partir de
+três dias, 50% com um ou dois dias e 0% no mesmo dia; **Rígida** devolve 50% a
+partir de sete dias e 0% com menos antecedência. O reembolso é calculado sobre o
+valor pago pela reserva, e reservas de dias anteriores não podem ser canceladas.
+
 ## Compilar e testar
 
 Com `g++` e `make` instalados:

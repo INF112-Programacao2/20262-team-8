@@ -10,11 +10,16 @@ static int gerarId() {
 
 Quadra::Quadra(const std::string& nome, const std::string& local,
                const std::vector<TipoQuadra>& tipos, double preco,
-               std::unique_ptr<EstrategiaPreco> estrategiaPreco)
+               std::unique_ptr<EstrategiaPreco> estrategiaPreco,
+               std::unique_ptr<PoliticaCancelamento> politicaCancelamento)
     : id(gerarId()), nome(nome), localizacao(local), tipos(tipos),
-      precoHora(preco), ativa(true), estrategiaPreco(std::move(estrategiaPreco)) {
+      precoHora(preco), ativa(true), estrategiaPreco(std::move(estrategiaPreco)),
+      politicaCancelamento(std::move(politicaCancelamento)) {
     if (!this->estrategiaPreco) {
         this->estrategiaPreco = std::make_unique<EstrategiaPadrao>();
+    }
+    if (!this->politicaCancelamento) {
+        this->politicaCancelamento = criarPolitica(TipoPolitica::Flexivel);
     }
 }
 
@@ -95,4 +100,8 @@ bool Quadra::isAtiva() const {
 
 std::string Quadra::getNomeEstrategiaPreco() const {
     return estrategiaPreco->getNome();
+}
+
+const PoliticaCancelamento* Quadra::getPoliticaCancelamento() const {
+    return politicaCancelamento.get();
 }

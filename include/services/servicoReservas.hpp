@@ -34,6 +34,7 @@ private:
     bool jaComecou(const Reserva& reserva) const;
     static bool ehAnoBissexto(int ano);
     static bool dataValida(const std::string& data);
+    static int diaOrdinal(const std::string& data);
 
     std::string dataHoje;
     int horaAgora;

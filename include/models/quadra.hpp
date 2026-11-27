@@ -3,6 +3,7 @@
 
 #include "../enums/TipoQuadra.hpp"
 #include "estrategias/estrategiaPreco.hpp"
+#include "politicas/politicaCancelamento.hpp"
 
 #include <memory>
 #include <string>
@@ -18,10 +19,12 @@ protected:
     double precoHora;
     bool ativa;
     std::unique_ptr<EstrategiaPreco> estrategiaPreco;
+    std::unique_ptr<PoliticaCancelamento> politicaCancelamento;
 public:
     Quadra(const std::string& nome, const std::string& localizacao,
            const std::vector<TipoQuadra>& tipos, double precoHora,
-           std::unique_ptr<EstrategiaPreco> estrategiaPreco = nullptr);
+           std::unique_ptr<EstrategiaPreco> estrategiaPreco = nullptr,
+           std::unique_ptr<PoliticaCancelamento> politicaCancelamento = nullptr);
     virtual ~Quadra();
 
     int getId() const;
@@ -31,6 +34,7 @@ public:
     double getPrecoHora() const;
     bool isAtiva() const;
     std::string getNomeEstrategiaPreco() const;
+    const PoliticaCancelamento* getPoliticaCancelamento() const;
 
     // cada tipo de quadra calcula do seu jeito.
     virtual std::string getCategoria() const;

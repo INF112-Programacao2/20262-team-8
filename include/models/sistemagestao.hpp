@@ -25,7 +25,8 @@ public:
     int cadastrarQuadra(const std::string& nome, const std::string& localizacao,
                         const std::vector<TipoQuadra>& tipos, double precoHora,
                         TipoEstrategia estrategia = TipoEstrategia::Padrao,
-                        Categoria categoria = Categoria::Simples);
+                        Categoria categoria = Categoria::Simples,
+                        TipoPolitica politica = TipoPolitica::Flexivel);
     int getQtdQuadras() const;
     Quadra* getQuadra(int indice) const;
 

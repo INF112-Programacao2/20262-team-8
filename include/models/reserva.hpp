@@ -14,6 +14,7 @@ class Reserva {
         std::string dataReserva;
         int horarioInicio;
         double valorTotal;
+        double valorReembolso;
         int duracao;
         StatusReserva status;
     public:
@@ -27,6 +28,7 @@ class Reserva {
         std::string getDataReserva() const;
         int getHorarioInicio() const;
         double getValorTotal() const;
+        double getValorReembolso() const;
         int getDuracaoHoras() const;
         int getHorarioFim() const;
         StatusReserva getStatus() const;
@@ -35,7 +37,7 @@ class Reserva {
 
         void validarHorarios();
         void solicitarCalculoValor();
-        bool cancelarReserva();
+        bool cancelarReserva(double reembolso = 0.0);
         bool concluir();
         bool registrarFalta();
         bool temConflitoComOutraReserva(const Reserva& outra) const;

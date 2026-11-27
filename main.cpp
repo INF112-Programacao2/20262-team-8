@@ -181,10 +181,23 @@ int main() {
                 break;
             }
 
+            const TipoPolitica politicasDisponiveis[] = {
+                TipoPolitica::Flexivel, TipoPolitica::Moderada, TipoPolitica::Rigida
+            };
+            std::cout << "Politicas de cancelamento:\n"
+                      << "1 - Flexivel (100% com 1 dia ou mais; 50% no mesmo dia)\n"
+                      << "2 - Moderada (100% com 3 dias ou mais; 50% com 1-2 dias)\n"
+                      << "3 - Rigida (50% com 7 dias ou mais)\n";
+            int politica;
+            if (!lerInteiro("Escolha a politica: ", 1, 3, politica)) {
+                break;
+            }
+
             const int quadraId = sistema.cadastrarQuadra(
                 nome, localizacao, modalidades, preco,
                 estrategiasDisponiveis[estrategia - 1],
-                categoriasDisponiveis[categoria - 1]);
+                categoriasDisponiveis[categoria - 1],
+                politicasDisponiveis[politica - 1]);
             std::cout << "Quadra cadastrada. ID: " << quadraId << '\n';
         } else if (opcao == 3) {
             if (sistema.getQtdClientes() == 0 || sistema.getQtdQuadras() == 0) {
@@ -253,7 +266,10 @@ int main() {
                 std::cout << quadra->getId() << " - " << quadra->getNome()
                           << " | Local: " << quadra->getLocalizacao()
                           << " | Preco/hora: R$ " << quadra->getPrecoHora()
+                          << " | Categoria: " << quadra->getCategoria()
                           << " | Estrategia: " << quadra->getNomeEstrategiaPreco()
+                          << " | Politica: "
+                          << quadra->getPoliticaCancelamento()->getNome()
                           << " | Modalidades: ";
                 const auto modalidades = quadra->getTipos();
                 for (std::size_t i = 0; i < modalidades.size(); ++i) {
@@ -291,7 +307,8 @@ int main() {
                 Reserva& selecionada = *reservas[indiceReserva - 1];
                 if (opcao == 6) {
                     if (sistema.cancelarReserva(selecionada)) {
-                        std::cout << "Reserva cancelada.\n";
+                        std::cout << "Reserva cancelada. Reembolso: R$ "
+                                  << selecionada.getValorReembolso() << '\n';
                     } else {
                         std::cout << "A reserva nao pode ser cancelada.\n";
                     }

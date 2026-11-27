@@ -3,8 +3,8 @@
 #include <stdexcept>
 
 Reserva::Reserva(Cliente* cli, Quadra* q, const std::string& dt, int hrInicio, int horas)
-    : cliente(cli), quadra(q), dataReserva(dt), horarioInicio(hrInicio), duracao(horas),
-      status(StatusReserva::Confirmada) {
+    : cliente(cli), quadra(q), dataReserva(dt), horarioInicio(hrInicio), valorTotal(0.0),
+      valorReembolso(0.0), duracao(horas), status(StatusReserva::Confirmada) {
     validarHorarios();
     solicitarCalculoValor();
     if (cliente != nullptr) {
@@ -40,10 +40,11 @@ void Reserva::solicitarCalculoValor() {
     }
 }
 
-bool Reserva::cancelarReserva() {
+bool Reserva::cancelarReserva(double reembolso) {
     if (!estaAtiva()) {
         return false;
     }
+    valorReembolso = reembolso;
     status = StatusReserva::Cancelada;
     return true;
 }
@@ -99,6 +100,10 @@ std::string Reserva::getStatusTexto() const {
 
 double Reserva::getValorTotal() const {
     return valorTotal;
+}
+
+double Reserva::getValorReembolso() const {
+    return valorReembolso;
 }
 
 Cliente* Reserva::getCliente() const {

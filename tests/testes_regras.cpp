@@ -40,6 +40,7 @@ void testaReservasEAvaliaDisponibilidade() {
     assert(sistema.listarReservasAtivas().size() == 2);
     assert(sistema.cancelarReserva(*reserva));
     assert(reserva->getStatus() == StatusReserva::Cancelada);
+    assert(reserva->getValorReembolso() == 200.0);
     assert(sistema.listarReservasAtivas().size() == 1);
     assert(sistema.verificarDisponibilidade(quadra, "2027-02-28", 17, 2));
     assert(!sistema.cancelarReserva(*reserva));
@@ -110,6 +111,53 @@ void testaCategoriasEAdicionaisDePreco() {
     assert(std::abs(sistema.getQuadra(2)->calcularValorReserva(2, 17) - 210.0) < 1e-9);
     assert(sistema.getQuadra(3)->getNomeEstrategiaPreco() == "Mensalista");
     assert(std::abs(sistema.getQuadra(3)->calcularValorReserva(2, 17) - 205.5) < 1e-9);
+}
+
+void testaPoliticasDeReembolso() {
+    Cliente cliente("Ana", "ana@example.com");
+    SistemaGestao sistema;
+    const std::vector<TipoQuadra> tipos{FUTEBOL};
+    assert(sistema.definirDataHoje("2024-02-28"));
+    assert(sistema.definirHoraAgora(0));
+
+    sistema.cadastrarQuadra("Flexivel", "Centro", tipos, 100.0,
+                            TipoEstrategia::Padrao, Categoria::Simples,
+                            TipoPolitica::Flexivel);
+    sistema.cadastrarQuadra("Moderada", "Centro", tipos, 100.0,
+                            TipoEstrategia::Padrao, Categoria::Simples,
+                            TipoPolitica::Moderada);
+    sistema.cadastrarQuadra("Rigida", "Centro", tipos, 100.0,
+                            TipoEstrategia::Padrao, Categoria::Simples,
+                            TipoPolitica::Rigida);
+
+    assert(sistema.getQuadra(0)->getPoliticaCancelamento()->getNome() == "Flexível");
+    assert(sistema.getQuadra(1)->getPoliticaCancelamento()->getNome() == "Moderada");
+    assert(sistema.getQuadra(2)->getPoliticaCancelamento()->getNome() == "Rígida");
+
+    auto cancelarEVerificar = [&](int indiceQuadra, const std::string& data,
+                                  int inicio, double reembolsoEsperado) {
+        Reserva* reserva = sistema.criarReserva(
+            cliente, *sistema.getQuadra(indiceQuadra), data, inicio, 1);
+        assert(reserva->getValorReembolso() == 0.0);
+        assert(sistema.cancelarReserva(*reserva));
+        assert(reserva->getStatus() == StatusReserva::Cancelada);
+        assert(std::abs(reserva->getValorReembolso() - reembolsoEsperado) < 1e-9);
+    };
+
+    cancelarEVerificar(0, "2024-02-28", 10, 50.0);
+    cancelarEVerificar(0, "2024-02-29", 10, 100.0);
+    cancelarEVerificar(1, "2024-02-28", 11, 0.0);
+    cancelarEVerificar(1, "2024-02-29", 11, 50.0);
+    cancelarEVerificar(1, "2024-03-01", 11, 50.0);
+    cancelarEVerificar(1, "2024-03-02", 11, 100.0);
+    cancelarEVerificar(2, "2024-03-05", 12, 0.0);
+    cancelarEVerificar(2, "2024-03-06", 12, 50.0);
+
+    Reserva* reservaPassada = sistema.criarReserva(
+        cliente, *sistema.getQuadra(0), "2024-03-07", 13, 1);
+    assert(sistema.definirDataHoje("2024-03-08"));
+    assert(!sistema.cancelarReserva(*reservaPassada));
+    assert(reservaPassada->estaAtiva());
 }
 
 void testaReservasPertencemAoServico() {
@@ -218,6 +266,7 @@ int main() {
     testaCadastroDeClientesPelaFachada();
     testaCadastroDeQuadrasPelaFachada();
     testaCategoriasEAdicionaisDePreco();
+    testaPoliticasDeReembolso();
     testaReservasPertencemAoServico();
     testaEstadosDeReservaEHorario();
     testaFaltasBloqueiamCliente();
