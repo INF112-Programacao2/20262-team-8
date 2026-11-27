@@ -3,11 +3,13 @@
 
 #include "../models/cliente.hpp"
 #include "../models/avaliacao.hpp"
+#include "../models/manutencao.hpp"
 #include "../models/quadra.hpp"
 #include "../models/reserva.hpp"
 #include "enums/Categoria.hpp"
 #include "services/servicoAvaliacoes.hpp"
 #include "services/servicoClientes.hpp"
+#include "services/servicoManutencoes.hpp"
 #include "services/servicoQuadras.hpp"
 #include "services/servicoReservas.hpp"
 
@@ -47,11 +49,18 @@ public:
     bool quadraEmDestaque(int quadraId) const;
     int getQtdAvaliacoes() const;
     const Avaliacao* getAvaliacao(int indice) const;
+    int registrarManutencao(int quadraId, const std::string& dataInicio,
+                             const std::string& dataFim, const std::string& motivo);
+    bool encerrarManutencao(int manutencaoId);
+    bool quadraEmManutencao(int quadraId) const;
+    int getQtdManutencoes() const;
+    const Manutencao* getManutencao(int indice) const;
     bool verificarDisponibilidade(const Quadra& quadra, const std::string& data, int horarioInicio, int duracaoHoras) const;
 private:
     ServicoQuadras servicoQuadras;
     ServicoClientes servicoClientes;
     ServicoReservas servicoReservas;
+    ServicoManutencoes servicoManutencoes;
     ServicoAvaliacoes servicoAvaliacoes;
 };
 

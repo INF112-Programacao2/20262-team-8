@@ -1,7 +1,10 @@
 #include "models/sistemagestao.hpp"
 
 SistemaGestao::SistemaGestao()
-    : servicoAvaliacoes(servicoReservas) {}
+    : servicoManutencoes(servicoQuadras, servicoReservas),
+      servicoAvaliacoes(servicoReservas) {
+    servicoReservas.definirConsultaManutencao(&servicoManutencoes);
+}
 
 bool SistemaGestao::definirDataHoje(const std::string& data) {
     return servicoReservas.definirDataHoje(data);
@@ -94,6 +97,28 @@ int SistemaGestao::getQtdAvaliacoes() const {
 
 const Avaliacao* SistemaGestao::getAvaliacao(int indice) const {
     return servicoAvaliacoes.obter(indice);
+}
+
+int SistemaGestao::registrarManutencao(int quadraId, const std::string& dataInicio,
+                                       const std::string& dataFim,
+                                       const std::string& motivo) {
+    return servicoManutencoes.registrar(quadraId, dataInicio, dataFim, motivo);
+}
+
+bool SistemaGestao::encerrarManutencao(int manutencaoId) {
+    return servicoManutencoes.encerrar(manutencaoId);
+}
+
+bool SistemaGestao::quadraEmManutencao(int quadraId) const {
+    return servicoManutencoes.quadraEmManutencao(quadraId);
+}
+
+int SistemaGestao::getQtdManutencoes() const {
+    return servicoManutencoes.quantidade();
+}
+
+const Manutencao* SistemaGestao::getManutencao(int indice) const {
+    return servicoManutencoes.obter(indice);
 }
 
 bool SistemaGestao::verificarDisponibilidade(const Quadra& quadra, const std::string& data, int horarioInicio, int duracaoHoras) const {

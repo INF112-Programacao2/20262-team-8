@@ -52,3 +52,12 @@ Quadra* ServicoQuadras::obter(int indice) const {
     }
     return quadras[static_cast<std::size_t>(indice)].get();
 }
+
+Quadra* ServicoQuadras::buscarPorId(int id) const {
+    for (const auto& quadra : quadras) {
+        if (quadra->getId() == id) {
+            return quadra.get();
+        }
+    }
+    return nullptr;
+}

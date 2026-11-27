@@ -73,10 +73,12 @@ int main() {
                   << "7 - Concluir reserva\n"
                   << "8 - Registrar falta\n"
                   << "9 - Avaliar reserva concluida\n"
+                  << "10 - Registrar manutencao\n"
+                  << "11 - Encerrar manutencao\n"
                   << "0 - Sair\n";
 
         int opcao;
-        if (!lerInteiro("Escolha uma opcao: ", 0, 9, opcao) || opcao == 0) {
+        if (!lerInteiro("Escolha uma opcao: ", 0, 11, opcao) || opcao == 0) {
             break;
         }
 
@@ -272,6 +274,8 @@ int main() {
                           << " | Politica: "
                           << quadra->getPoliticaCancelamento()->getNome()
                           << " | Status: " << (quadra->isAtiva() ? "Ativa" : "Inativa")
+                          << (sistema.quadraEmManutencao(quadra->getId())
+                                  ? " | Em manutencao" : "")
                           << (sistema.quadraEmDestaque(quadra->getId())
                                   ? " | Em destaque" : "")
                           << " | Modalidades: ";
@@ -323,6 +327,64 @@ int main() {
                 if (!reserva->getQuadra()->isAtiva()) {
                     std::cout << "A quadra foi desativada para revisao.\n";
                 }
+            }
+        } else if (opcao == 10) {
+            if (sistema.getQtdQuadras() == 0) {
+                std::cout << "Cadastre uma quadra antes de registrar manutencao.\n";
+                continue;
+            }
+            std::cout << "\nQuadras:\n";
+            for (int i = 0; i < sistema.getQtdQuadras(); ++i) {
+                const Quadra* quadra = sistema.getQuadra(i);
+                std::cout << quadra->getId() << " - " << quadra->getNome() << '\n';
+            }
+
+            int quadraId;
+            std::string dataInicio;
+            std::string dataFim;
+            std::string motivo;
+            if (!lerInteiro("ID da quadra: ", 1, 1000000, quadraId) ||
+                !lerTexto("Data inicial (AAAA-MM-DD): ", dataInicio) ||
+                !lerTexto("Data final (AAAA-MM-DD): ", dataFim) ||
+                !lerTexto("Motivo: ", motivo)) {
+                break;
+            }
+            const int manutencaoId = sistema.registrarManutencao(
+                quadraId, dataInicio, dataFim, motivo);
+            if (manutencaoId < 0) {
+                std::cout << "Dados invalidos; manutencao nao registrada.\n";
+            } else {
+                std::cout << "Manutencao registrada com sucesso.\n";
+            }
+        } else if (opcao == 11) {
+            std::vector<int> manutencoesAbertas;
+            std::cout << "\nManutencoes abertas:\n";
+            for (int i = 0; i < sistema.getQtdManutencoes(); ++i) {
+                const Manutencao* manutencao = sistema.getManutencao(i);
+                if (manutencao->estaAberta()) {
+                    manutencoesAbertas.push_back(manutencao->getId());
+                    std::cout << manutencoesAbertas.size() << " - Quadra "
+                              << manutencao->getQuadraId() << " | "
+                              << manutencao->getDataInicio() << " ate "
+                              << manutencao->getDataFim() << " | "
+                              << manutencao->getMotivo() << '\n';
+                }
+            }
+            if (manutencoesAbertas.empty()) {
+                std::cout << "Nao ha manutencoes abertas.\n";
+                continue;
+            }
+            int indiceManutencao;
+            if (!lerInteiro("Manutencao para encerrar: ", 1,
+                            static_cast<int>(manutencoesAbertas.size()),
+                            indiceManutencao)) {
+                break;
+            }
+            if (sistema.encerrarManutencao(
+                    manutencoesAbertas[indiceManutencao - 1])) {
+                std::cout << "Manutencao encerrada.\n";
+            } else {
+                std::cout << "Manutencao nao encontrada ou ja encerrada.\n";
             }
         } else if (opcao >= 5 && opcao <= 8) {
             const auto reservas = sistema.listarReservasAtivas();

@@ -352,6 +352,76 @@ void testaAvaliacoesEReclamacoes() {
     assert(quadraInativaRejeitada);
 }
 
+void testaManutencaoCancelaReservasEBloqueiaPeriodo() {
+    SistemaGestao sistema;
+    assert(sistema.definirDataHoje("2027-01-01"));
+    assert(sistema.definirHoraAgora(0));
+    sistema.cadastrarCliente("Ana", "ana@example.com");
+    sistema.cadastrarCliente("Bruno", "bruno@example.com");
+    const std::vector<TipoQuadra> tipos{FUTEBOL};
+    const int quadraId = sistema.cadastrarQuadra(
+        "Principal", "Centro", tipos, 100.0);
+    Cliente* ana = sistema.getCliente(0);
+    Cliente* bruno = sistema.getCliente(1);
+    Quadra* quadra = sistema.getQuadra(0);
+
+    Reserva* reservaAna = sistema.criarReserva(
+        *ana, *quadra, "2027-01-02", 10, 1);
+    Reserva* reservaBruno = sistema.criarReserva(
+        *bruno, *quadra, "2027-01-03", 10, 1);
+    Reserva* reservaForaDoPeriodo = sistema.criarReserva(
+        *ana, *quadra, "2027-01-04", 10, 1);
+
+    const int manutencaoId = sistema.registrarManutencao(
+        quadraId, "2027-01-02", "2027-01-03", "Reparo do piso");
+    assert(manutencaoId > 0);
+    assert(sistema.getQtdManutencoes() == 1);
+    assert(sistema.getManutencao(0)->getId() == manutencaoId);
+    assert(sistema.getManutencao(-1) == nullptr);
+    assert(sistema.getManutencao(1) == nullptr);
+    assert(sistema.getManutencao(0)->estaAberta());
+    assert(sistema.quadraEmManutencao(quadraId));
+
+    assert(reservaAna->getStatus() == StatusReserva::Cancelada);
+    assert(reservaBruno->getStatus() == StatusReserva::Cancelada);
+    assert(reservaAna->getValorReembolso() == reservaAna->getValorTotal());
+    assert(reservaBruno->getValorReembolso() == reservaBruno->getValorTotal());
+    assert(ana->getDescontoProximaReserva() == 10);
+    assert(bruno->getDescontoProximaReserva() == 10);
+    assert(reservaForaDoPeriodo->estaAtiva());
+
+    assert(!sistema.verificarDisponibilidade(*quadra, "2027-01-02", 12, 1));
+    assert(!sistema.verificarDisponibilidade(*quadra, "2027-01-03", 12, 1));
+    assert(sistema.verificarDisponibilidade(*quadra, "2027-01-04", 12, 1));
+    bool reservaNoPeriodoRejeitada = false;
+    try {
+        sistema.criarReserva(*bruno, *quadra, "2027-01-02", 12, 1);
+    } catch (const std::runtime_error&) {
+        reservaNoPeriodoRejeitada = true;
+    }
+    assert(reservaNoPeriodoRejeitada);
+
+    assert(sistema.registrarManutencao(
+        quadraId, "2027-02-30", "2027-03-01", "Data invalida") == -1);
+    assert(sistema.registrarManutencao(
+        quadraId, "2027-01-04", "2027-01-03", "Periodo invertido") == -1);
+    assert(sistema.registrarManutencao(
+        -1, "2027-01-02", "2027-01-03", "Quadra inexistente") == -1);
+    assert(sistema.registrarManutencao(
+        quadraId, "2027-01-02", "2027-01-03", "   ") == -1);
+    assert(!sistema.encerrarManutencao(manutencaoId + 1));
+
+    assert(sistema.encerrarManutencao(manutencaoId));
+    assert(!sistema.encerrarManutencao(manutencaoId));
+    assert(!sistema.quadraEmManutencao(quadraId));
+    assert(sistema.verificarDisponibilidade(*quadra, "2027-01-02", 12, 1));
+    Reserva* reservaComCupom = sistema.criarReserva(
+        *ana, *quadra, "2027-01-02", 12, 1);
+    assert(reservaComCupom->getDescontoPercentual() == 10);
+    assert(reservaComCupom->getValorTotal() == 90.0);
+    assert(ana->getDescontoProximaReserva() == 0);
+}
+
 } // namespace
 
 int main() {
@@ -364,4 +434,5 @@ int main() {
     testaEstadosDeReservaEHorario();
     testaFaltasBloqueiamCliente();
     testaAvaliacoesEReclamacoes();
+    testaManutencaoCancelaReservasEBloqueiaPeriodo();
 }

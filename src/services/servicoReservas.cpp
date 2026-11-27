@@ -17,6 +17,7 @@ ServicoReservas::ServicoReservas() {
     dataFormatada << std::put_time(horarioLocal, "%Y-%m-%d");
     dataHoje = dataFormatada.str();
     horaAgora = horarioLocal->tm_hour;
+    consultaManutencao = nullptr;
 }
 
 bool ServicoReservas::definirDataHoje(const std::string& data) {
@@ -41,6 +42,10 @@ bool ServicoReservas::definirHoraAgora(int hora) {
 
 int ServicoReservas::getHoraAgora() const {
     return horaAgora;
+}
+
+void ServicoReservas::definirConsultaManutencao(const ConsultaManutencao* consulta) {
+    consultaManutencao = consulta;
 }
 
 bool ServicoReservas::ehAnoBissexto(int ano) {
@@ -102,6 +107,10 @@ Reserva* ServicoReservas::criarReserva(Cliente& cliente, Quadra& quadra,
     }
     if (!quadra.isAtiva()) {
         throw std::runtime_error("A quadra esta inativa.");
+    }
+    if (consultaManutencao != nullptr &&
+        consultaManutencao->quadraBloqueadaNaData(quadra.getId(), data)) {
+        throw std::runtime_error("A quadra esta em manutencao nessa data.");
     }
     if (!verificarDisponibilidade(quadra, data, horarioInicio, duracaoHoras)) {
         throw std::runtime_error("A quadra ja possui uma reserva nesse horario.");
@@ -182,6 +191,29 @@ Reserva* ServicoReservas::buscarPorId(int id) const {
     return nullptr;
 }
 
+int ServicoReservas::cancelarNoPeriodo(int quadraId, const std::string& dataInicio,
+                                       const std::string& dataFim,
+                                       int cupomPercentual) {
+    if (!dataValida(dataInicio) || !dataValida(dataFim) || dataFim < dataInicio) {
+        throw std::invalid_argument("Periodo de manutencao invalido.");
+    }
+    if (cupomPercentual < 0 || cupomPercentual > 100) {
+        throw std::invalid_argument("O cupom deve estar entre 0 e 100%.");
+    }
+
+    int canceladas = 0;
+    for (const auto& reserva : reservas) {
+        if (reserva->estaAtiva() && reserva->getQuadra()->getId() == quadraId &&
+            reserva->getDataReserva() >= dataInicio &&
+            reserva->getDataReserva() <= dataFim &&
+            reserva->cancelarReserva(reserva->getValorTotal())) {
+            reserva->getCliente()->receberCupom(cupomPercentual);
+            ++canceladas;
+        }
+    }
+    return canceladas;
+}
+
 bool ServicoReservas::pertenceAoServico(const Reserva& reserva) const {
     for (const auto& reservaGerenciada : reservas) {
         if (reservaGerenciada.get() == &reserva) {
@@ -202,6 +234,10 @@ bool ServicoReservas::verificarDisponibilidade(const Quadra& quadra,
                                                 int horarioInicio,
                                                 int duracaoHoras) const {
     validarDadosReserva(data, horarioInicio, duracaoHoras);
+    if (consultaManutencao != nullptr &&
+        consultaManutencao->quadraBloqueadaNaData(quadra.getId(), data)) {
+        return false;
+    }
 
     const int fimNovoHorario = horarioInicio + duracaoHoras;
     for (const auto& reserva : reservas) {

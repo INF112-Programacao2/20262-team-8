@@ -19,6 +19,7 @@ public:
                   TipoPolitica politica = TipoPolitica::Flexivel);
     int quantidade() const;
     Quadra* obter(int indice) const;
+    Quadra* buscarPorId(int id) const;
 
 private:
     std::vector<std::unique_ptr<Quadra>> quadras;

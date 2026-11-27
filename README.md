@@ -32,6 +32,11 @@ são reclamações: concedem ao cliente um cupom de 15% para a próxima reserva,
 três reclamações deixam a quadra inativa para revisão. Uma média de pelo menos
 4,5 com três ou mais avaliações destaca a quadra.
 
+Manutenções são registradas por quadra e intervalo de datas. Reservas confirmadas
+que coincidirem com o período são canceladas com reembolso integral e cupom de
+10% para o cliente. Novas reservas ficam bloqueadas nas datas da manutenção até
+que ela seja encerrada; a CLI permite registrar e encerrar manutenções.
+
 ## Compilar e testar
 
 Com `g++` e `make` instalados:
